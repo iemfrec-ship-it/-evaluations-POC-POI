@@ -143,6 +143,7 @@
   .session-titre{font-weight:700; font-size:14px;}
   .session-meta{font-size:12px; color:var(--gris); margin-top:2px;}
   .session-ligne .btnOuvrirSession{background:var(--bleu); color:#fff; border:none; padding:9px 14px; font-size:13px; flex:none;}
+  .session-ligne .session-dup{background:none; border:none; color:var(--bleu); font-size:16px; padding:6px; flex:none;}
   .session-ligne .session-sup{background:none; border:none; color:var(--rouge); font-size:16px; padding:6px; flex:none;}
 
   .panel-eleves{
@@ -275,6 +276,7 @@ Nom Prénom
       <div class="carte hidden" id="carteSessions">
         <h2>3. Évaluations de cette classe</h2>
         <div id="listeSessions"></div>
+        <div id="panelDupliquer" class="panel-eleves hidden" style="margin-top:8px;"></div>
         <hr class="separateur">
         <h3 class="souscarte">Nouvelle évaluation</h3>
         <label>Titre de l'évaluation</label>
@@ -803,6 +805,7 @@ function renderSessionsList(){
     html += "<div class=\"session-meta\">" + sessionDateRangeLabel(s) + " \u2014 " + escapeHtml(COMP_LABELS[s.competence]) + " \u2014 " + done + "/" + total + " " + TXT.eleves + "</div>";
     html += "</div>";
     html += "<button class=\"btnOuvrirSession\" data-id=\"" + s.id + "\">Ouvrir</button>";
+    html += "<button class=\"session-dup\" data-id=\"" + s.id + "\" title=\"Dupliquer vers une autre classe\">\u29C9</button>";
     html += "<button class=\"session-sup\" data-id=\"" + s.id + "\" title=\"Supprimer cette evaluation\">\u2715</button>";
     html += "</div>";
   }
@@ -813,12 +816,80 @@ function renderSessionsList(){
       openSession(ev.currentTarget.getAttribute("data-id"));
     });
   }
+  var dupBtns = zone.querySelectorAll(".session-dup");
+  for(var d=0; d<dupBtns.length; d++){
+    dupBtns[d].addEventListener("click", function(ev){
+      toggleDupliquerPanel(ev.currentTarget.getAttribute("data-id"));
+    });
+  }
   var supBtns = zone.querySelectorAll(".session-sup");
   for(var k=0; k<supBtns.length; k++){
     supBtns[k].addEventListener("click", function(ev){
       deleteSession(ev.currentTarget.getAttribute("data-id"));
     });
   }
+}
+
+var duplicatingSessionId = null;
+
+function toggleDupliquerPanel(sessionId){
+  var panel = document.getElementById("panelDupliquer");
+  if(duplicatingSessionId === sessionId && !panel.classList.contains("hidden")){
+    panel.classList.add("hidden");
+    duplicatingSessionId = null;
+    return;
+  }
+  duplicatingSessionId = sessionId;
+  var session = findSession(sessionId);
+  if(!session){ return; }
+  var autresClasses = [];
+  for(var k in state.db.classes){
+    if(state.db.classes.hasOwnProperty(k) && k !== state.currentClass){ autresClasses.push(k); }
+  }
+  autresClasses.sort();
+  var html = "<p class=\"aide\" style=\"margin:6px 6px 10px;\">Dupliquer \"" + escapeHtml(session.title) + "\" (" + escapeHtml(COMP_LABELS[session.competence]) + ", meme bareme) vers :</p>";
+  if(autresClasses.length === 0){
+    html += "<p class=\"aide\" style=\"margin:6px;\">Creez d'abord une autre classe pour pouvoir y dupliquer cette evaluation.</p>";
+  }else{
+    for(var i=0; i<autresClasses.length; i++){
+      html += "<button class=\"eleve-panel-item dup-cible\" data-classe=\"" + escapeHtml(autresClasses[i]) + "\"><span>" + escapeHtml(autresClasses[i]) + "</span></button>";
+    }
+  }
+  html += "<button class=\"eleve-panel-item\" id=\"btnAnnulerDup\"><span>Annuler</span></button>";
+  panel.innerHTML = html;
+  panel.classList.remove("hidden");
+  panel.scrollIntoView({ block:"nearest" });
+  var cibleBtns = panel.querySelectorAll(".dup-cible");
+  for(var c=0; c<cibleBtns.length; c++){
+    cibleBtns[c].addEventListener("click", function(ev){
+      duplicateSessionToClass(duplicatingSessionId, ev.currentTarget.getAttribute("data-classe"));
+    });
+  }
+  document.getElementById("btnAnnulerDup").addEventListener("click", function(){
+    panel.classList.add("hidden");
+    duplicatingSessionId = null;
+  });
+}
+
+function duplicateSessionToClass(sessionId, targetClassName){
+  var source = findSession(sessionId);
+  if(!source){ return; }
+  var targetCls = ensureClass(targetClassName);
+  var criteriaCopy = JSON.parse(JSON.stringify(source.criteria));
+  var newSession = {
+    id: genId(),
+    title: source.title,
+    competence: source.competence,
+    criteria: criteriaCopy,
+    createdAt: new Date().toISOString(),
+    records: {}
+  };
+  targetCls.sessions.push(newSession);
+  targetCls.templates[source.competence] = JSON.parse(JSON.stringify(criteriaCopy));
+  saveDB();
+  document.getElementById("panelDupliquer").classList.add("hidden");
+  duplicatingSessionId = null;
+  alert("Evaluation \"" + source.title + "\" dupliquee vers " + targetClassName + " (meme bareme, aucune note copiee).");
 }
 
 function createSession(){
