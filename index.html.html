@@ -77,8 +77,9 @@
     padding:16px; margin-bottom:16px;
   }
   .carte h2{font-size:17px; color:var(--bleu-fonce);}
+  .carte h3.souscarte{margin:0 0 8px 0; font-size:15px; color:var(--bleu-fonce);}
   label{display:block; font-size:13px; font-weight:600; color:var(--gris); margin:10px 0 4px;}
-  input[type=text], input[type=number], select, textarea{
+  input[type=text], input[type=number], input[type=date], input[type=password], select, textarea{
     width:100%; padding:12px; border:1.5px solid var(--bordure); background:#fbfcfe;
   }
   textarea{min-height:70px; resize:vertical;}
@@ -92,28 +93,13 @@
   .btn-large{width:100%; padding:14px; font-size:16px;}
   .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
   .row > *{flex:1;}
-  .chip{
-    display:inline-flex; align-items:center; gap:6px; background:#eef3fa; border:1px solid #cfe0f2;
-    padding:6px 10px; border-radius:20px; font-size:13px; margin:3px;
-  }
   .liste-classes{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
-  .classe-btn{
-    padding:10px 14px; border-radius:10px; border:1.5px solid var(--bordure); background:#fbfcfe; font-size:14px;
-  }
-  .classe-btn.actif{background:var(--bleu); color:#fff; border-color:var(--bleu);}
   .classe-item{position:relative; display:inline-flex;}
-  .classe-item .classe-btn{padding-right:36px;}
+  .classe-item .classe-btn{padding-right:36px; border-radius:10px; border:1.5px solid var(--bordure); background:#fbfcfe; font-size:14px; padding-top:10px; padding-bottom:10px; padding-left:14px;}
+  .classe-item .classe-btn.actif{color:#fff; border-color:transparent;}
   .classe-item .classe-sup{
     position:absolute; right:4px; top:50%; transform:translateY(-50%);
     background:none; border:none; color:var(--rouge); font-size:15px; padding:6px; line-height:1;
-  }
-  .chip-eleve{
-    display:inline-flex; align-items:center; gap:8px; background:#eef3fa; border:1px solid #cfe0f2;
-    padding:6px 6px 6px 12px; border-radius:20px; font-size:13px; margin:3px;
-  }
-  .chip-eleve .chipSup{
-    background:#fff; border:1px solid #f3c9c9; color:var(--rouge); border-radius:50%;
-    width:24px; height:24px; font-size:12px; line-height:1; padding:0;
   }
 
   .critere-ligne{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
@@ -129,7 +115,7 @@
   }
   .score-ligne .nom{font-size:15px; flex:1;}
   .score-ligne .nom small{display:block; color:var(--gris); font-size:12px;}
-  .score-ligne input{width:80px; text-align:center; flex:none;}
+  .score-ligne input{width:90px; text-align:center; flex:none;}
 
   .total-box{
     background:var(--bleu); color:#fff; border-radius:12px; padding:14px; text-align:center;
@@ -138,16 +124,54 @@
   .total-box span{font-size:14px; font-weight:400; display:block; opacity:.85;}
 
   .hist-ligne{
-    display:flex; justify-content:space-between; align-items:center; padding:8px 10px;
-    background:#f7f9fc; border-radius:8px; margin-bottom:6px; font-size:14px;
+    display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px;
+    background:#f7f9fc; border-radius:8px; margin-bottom:6px; font-size:13px;
   }
-  .hist-ligne .fleche{font-size:18px; width:28px; text-align:center;}
+  .hist-ligne > div:first-child{flex:1;}
+  .hist-actuelle{border:1.5px solid var(--bleu); background:#eef3fa;}
+  .hist-ligne .fleche{font-size:18px; width:26px; text-align:center; flex:none;}
   .fleche-up{color:var(--vert);}
   .fleche-down{color:var(--rouge);}
   .fleche-flat{color:var(--gris);}
-  .hist-ligne button{background:none; border:none; color:var(--bleu); font-size:13px; text-decoration:underline; padding:2px;}
+  .hist-ligne button{background:none; border:none; color:var(--bleu); font-size:13px; text-decoration:underline; padding:2px; flex:none;}
 
-  select.eleve-select, select.competence-select{font-weight:600;}
+  .session-ligne{
+    display:flex; align-items:center; gap:8px; background:#f7f9fc; border:1px solid var(--bordure);
+    border-radius:10px; padding:10px 12px; margin-bottom:8px;
+  }
+  .session-info{flex:1;}
+  .session-titre{font-weight:700; font-size:14px;}
+  .session-meta{font-size:12px; color:var(--gris); margin-top:2px;}
+  .session-ligne .btnOuvrirSession{background:var(--bleu); color:#fff; border:none; padding:9px 14px; font-size:13px; flex:none;}
+  .session-ligne .session-sup{background:none; border:none; color:var(--rouge); font-size:16px; padding:6px; flex:none;}
+
+  .panel-eleves{
+    border:1px solid var(--bordure); border-radius:10px; margin-top:8px; padding:4px; max-height:300px; overflow-y:auto;
+  }
+  .eleve-panel-item{
+    display:flex; justify-content:space-between; align-items:center; width:100%; text-align:left;
+    padding:10px; border:none; background:#fff; border-bottom:1px solid var(--bordure); font-size:14px;
+  }
+  .eleve-panel-item:last-child{border-bottom:none;}
+  .eleve-panel-item.actif{background:#eef3fa;}
+  .statut{font-size:12px; font-weight:700; padding:3px 9px; border-radius:10px; flex:none;}
+  .statut-attente{background:#f1f3f5; color:var(--gris);}
+  .statut-fait{background:#e6f7ec; color:var(--vert);}
+  .statut-abs{background:#fdecea; color:var(--rouge);}
+
+  select.eleve-select{font-weight:600;}
+  .chip-eleve{
+    display:inline-flex; align-items:center; gap:8px; background:#eef3fa; border:1px solid #cfe0f2;
+    padding:6px 6px 6px 12px; border-radius:20px; font-size:13px; margin:3px;
+  }
+  .chip-eleve .chipSup{
+    background:#fff; border:1px solid #f3c9c9; color:var(--rouge); border-radius:50%;
+    width:24px; height:24px; font-size:12px; line-height:1; padding:0;
+  }
+  .chip-competence{
+    display:inline-block; background:#eef3fa; border:1px solid #cfe0f2; color:var(--bleu-fonce);
+    padding:8px 14px; border-radius:20px; font-size:14px; font-weight:600;
+  }
 
   /* ---- FAB ---- */
   #fab{
@@ -243,8 +267,21 @@ Nom Prénom
         <div id="listeElevesChips" style="margin-top:10px;"></div>
       </div>
 
-      <div class="carte hidden" id="carteContinuer">
-        <button class="btn btn-vert btn-large" id="btnAllerEval">Continuer vers l'évaluation →</button>
+      <div class="carte hidden" id="carteSessions">
+        <h2>3. Évaluations de cette classe</h2>
+        <div id="listeSessions"></div>
+        <hr class="separateur">
+        <h3 class="souscarte">Nouvelle évaluation</h3>
+        <label>Titre de l'évaluation</label>
+        <input type="text" id="nouvelleSessionTitre" placeholder="Ex : Oral n°1 - Semestre 1">
+        <label>Date</label>
+        <input type="date" id="nouvelleSessionDate">
+        <label>Compétence</label>
+        <select id="nouvelleSessionCompetence">
+          <option value="POC">Production orale en continu</option>
+          <option value="POI">Production orale en interaction</option>
+        </select>
+        <button class="btn btn-vert btn-large" id="btnCreerSession" style="margin-top:12px;">Créer cette évaluation</button>
       </div>
     </div>
 
@@ -252,11 +289,12 @@ Nom Prénom
     <div id="view-eval" class="hidden">
 
       <div class="carte">
-        <h2>Compétence évaluée</h2>
-        <select id="competenceSelect" class="competence-select">
-          <option value="POC">Production orale en continu</option>
-          <option value="POI">Production orale en interaction</option>
-        </select>
+        <label>Titre de l'évaluation</label>
+        <input type="text" id="evalSessionTitre" placeholder="Titre de l'évaluation">
+        <label>Date</label>
+        <input type="date" id="evalSessionDate">
+        <label>Compétence</label>
+        <div><span class="chip-competence" id="evalSessionCompetenceLabel">—</span></div>
       </div>
 
       <div class="carte">
@@ -264,18 +302,25 @@ Nom Prénom
         <div id="criteresEditeur"></div>
         <button class="btn btn-gris" id="btnAjouterCritere">+ Ajouter un critère</button>
         <hr class="separateur">
-        <button class="btn btn-bleu btn-large" id="btnValiderBareme">Valider le barème pour cette compétence</button>
-        <p class="aide">Le barème est mémorisé pour cette classe et cette compétence ; vous pouvez le modifier à tout moment (les évaluations déjà enregistrées ne changent pas).</p>
+        <button class="btn btn-bleu btn-large" id="btnValiderBareme">Valider / mettre à jour le barème</button>
+        <p class="aide">Le barème est mémorisé pour cette classe et cette compétence et réutilisé pour vos prochaines évaluations.</p>
       </div>
 
-      <div class="carte hidden" id="carteEvalEleve">
+      <div class="carte" id="carteEvalEleve">
         <h2>Élève évalué</h2>
-        <select id="eleveSelect" class="eleve-select"></select>
+        <div class="row" style="align-items:center;">
+          <select id="eleveSelect" class="eleve-select"></select>
+          <button class="btn btn-gris" id="btnElevesPanel" style="flex:none;">👥 Élèves</button>
+        </div>
+        <div id="panelEleves" class="panel-eleves hidden"></div>
 
         <div id="scoresZone" style="margin-top:14px;"></div>
         <p class="aide">Saisissez une note pour chaque critère, ou tapez ABS si l'élève était absent sur ce critère.</p>
 
         <div class="total-box" id="totalBox">0 / 0<span>Total</span></div>
+
+        <label>Point d'anglais à revoir</label>
+        <textarea id="pointAnglaisInput" placeholder="Point de langue prioritaire à retravailler..."></textarea>
 
         <label>Appréciation générale</label>
         <textarea id="appreciationInput" placeholder="Appréciation générale de la prestation..."></textarea>
@@ -287,8 +332,7 @@ Nom Prénom
         <textarea id="recommandationsInput" placeholder="Pistes de travail pour progresser..."></textarea>
 
         <div class="row" style="margin-top:14px;">
-          <button class="btn btn-vert" id="btnEnregistrerEval">Enregistrer l'évaluation</button>
-          <button class="btn btn-gris hidden" id="btnAnnulerEdition" style="flex:none;">Annuler la modification</button>
+          <button class="btn btn-vert btn-large" id="btnEnregistrerEval">Enregistrer l'évaluation</button>
         </div>
         <button class="btn btn-bleu btn-large" id="btnEleveSuivant" style="margin-top:10px;">Enregistrer et passer à l'élève suivant →</button>
 
@@ -333,29 +377,19 @@ function colorForClass(nom){
 }
 
 var TXT = {
-  eleve: "\u00c9l\u00e8ve",
-  Eleve: "\u00c9l\u00e8ve",
-  eleves: "\u00e9l\u00e8ves",
-  evaluation: "\u00e9valuation",
-  Evaluation: "\u00c9valuation",
-  evaluations: "\u00e9valuations",
-  competence: "comp\u00e9tence",
-  Competence: "Comp\u00e9tence",
-  critere: "crit\u00e8re",
-  criteres: "crit\u00e8res",
-  bareme: "bar\u00e8me",
-  Bareme: "Bar\u00e8me",
-  appreciation: "appr\u00e9ciation",
-  Appreciation: "Appr\u00e9ciation",
-  generale: "g\u00e9n\u00e9rale",
-  Generale: "G\u00e9n\u00e9rale",
-  precedente: "pr\u00e9c\u00e9dente",
-  nonEvalue: "Non \u00e9valu\u00e9(e) pour cette comp\u00e9tence",
   arrowUp: "\u25B2",
   arrowDown: "\u25BC",
   arrowFlat: "\u25B6",
+  nonEvalue: "Non \u00e9valu\u00e9(e) pour cette comp\u00e9tence",
   Genere: "G\u00e9n\u00e9r\u00e9",
-  classeCompl: "Classe compl\u00e8te",
+  Appreciation: "Appr\u00e9ciation",
+  generale: "g\u00e9n\u00e9rale",
+  pointAnglais: "Point d'anglais \u00e0 revoir",
+  historique: "Historique des \u00e9valuations",
+  derniereEval: "Derni\u00e8re \u00e9valuation",
+  aucuneEval: "Aucune \u00e9valuation cr\u00e9\u00e9e pour le moment.",
+  eleves: "\u00e9l\u00e8ves",
+  aEvaluer: "A evaluer",
   aucuneClasse: "Aucune classe s\u00e9lectionn\u00e9e"
 };
 
@@ -367,11 +401,12 @@ var COMP_LABELS = {
 var state = {
   db: null,
   currentClass: null,
-  currentCompetence: "POC",
+  currentSessionId: null,
   currentCriteria: [],
-  currentStudent: null,
-  editingRecordIndex: null
+  currentStudent: null
 };
+
+var idCounter = 0;
 
 /* ---------- STOCKAGE ---------- */
 function loadDB(){
@@ -401,15 +436,77 @@ function saveDB(){
   }
 }
 
+function genId(){
+  idCounter++;
+  return "s" + Date.now() + "_" + idCounter;
+}
+
+function todayISO(){
+  var d = new Date();
+  var mm = ("0" + (d.getMonth()+1)).slice(-2);
+  var dd = ("0" + d.getDate()).slice(-2);
+  return d.getFullYear() + "-" + mm + "-" + dd;
+}
+
+function migrateClass(cls){
+  if(!cls.templates){ cls.templates = {}; }
+  if(!cls.sessions){ cls.sessions = []; }
+  if(cls.evaluations){
+    for(var student in cls.evaluations){
+      if(!cls.evaluations.hasOwnProperty(student)){ continue; }
+      var byComp = cls.evaluations[student];
+      for(var comp in byComp){
+        if(!byComp.hasOwnProperty(comp)){ continue; }
+        var arr = byComp[comp];
+        for(var i=0; i<arr.length; i++){
+          var rec = arr[i];
+          var bareme = [];
+          for(var k=0; k<rec.criteria.length; k++){
+            bareme.push({ name: rec.criteria[k].name, max: rec.criteria[k].max });
+          }
+          var sess = {
+            id: genId(),
+            title: "Evaluation recuperee",
+            date: rec.date ? rec.date.substring(0,10) : todayISO(),
+            competence: comp,
+            criteria: bareme,
+            records: {}
+          };
+          sess.records[student] = {
+            criteria: rec.criteria,
+            total: rec.total,
+            maxTotal: rec.maxTotal,
+            pointAnglais: "",
+            appreciation: rec.appreciation || "",
+            conseils: rec.conseils || "",
+            recommandations: rec.recommandations || "",
+            savedAt: rec.date
+          };
+          cls.sessions.push(sess);
+        }
+      }
+    }
+    delete cls.evaluations;
+  }
+}
+
 function ensureClass(name){
   if(!state.db.classes[name]){
-    state.db.classes[name] = {
-      students: [],
-      evaluations: {},
-      templates: {}
-    };
+    state.db.classes[name] = { students:[], templates:{}, sessions:[] };
   }
-  return state.db.classes[name];
+  var cls = state.db.classes[name];
+  migrateClass(cls);
+  return cls;
+}
+
+function findSession(id){
+  if(!state.currentClass){ return null; }
+  var cls = state.db.classes[state.currentClass];
+  if(!cls){ return null; }
+  for(var i=0; i<cls.sessions.length; i++){
+    if(cls.sessions[i].id === id){ return cls.sessions[i]; }
+  }
+  return null;
 }
 
 /* ---------- UTILITAIRES ---------- */
@@ -434,6 +531,13 @@ function formatDate(iso){
   var hh = ("0" + d.getHours()).slice(-2);
   var mn = ("0" + d.getMinutes()).slice(-2);
   return jj + "/" + mm + "/" + aaaa + " " + hh + ":" + mn;
+}
+
+function formatDateOnly(isoDate){
+  if(!isoDate){ return ""; }
+  var parts = isoDate.split("-");
+  if(parts.length !== 3){ return isoDate; }
+  return parts[2] + "/" + parts[1] + "/" + parts[0];
 }
 
 function round1(n){
@@ -462,9 +566,6 @@ function checkAuth(){
 function startApp(){
   state.db = loadDB();
   renderClassList();
-  if(state.currentClass){
-    selectClass(state.currentClass);
-  }
 }
 
 /* ---------- GESTION CLASSES ---------- */
@@ -480,11 +581,11 @@ function renderClassList(){
   var html = "";
   for(var i=0; i<names.length; i++){
     var nom = names[i];
-    var actif = (nom === state.currentClass) ? " actif" : "";
+    var estActif = (nom === state.currentClass);
     var couleur = colorForClass(nom);
-    var styleBtn = actif ? ("background:" + couleur + "; border-color:" + couleur + ";") : ("border-left:6px solid " + couleur + ";");
+    var styleBtn = estActif ? ("background:" + couleur + ";") : ("border-left:6px solid " + couleur + ";");
     html += "<span class=\"classe-item\">";
-    html += "<button class=\"classe-btn" + actif + "\" data-classe=\"" + escapeHtml(nom) + "\" style=\"" + styleBtn + "\">" + escapeHtml(nom) + "</button>";
+    html += "<button class=\"classe-btn" + (estActif ? " actif" : "") + "\" data-classe=\"" + escapeHtml(nom) + "\" style=\"" + styleBtn + "\">" + escapeHtml(nom) + "</button>";
     html += "<button class=\"classe-sup\" data-classe=\"" + escapeHtml(nom) + "\" title=\"Supprimer cette classe\">\u2715</button>";
     html += "</span>";
   }
@@ -496,8 +597,8 @@ function renderClassList(){
     });
   }
   var supBtns = zone.querySelectorAll(".classe-sup");
-  for(var k=0; k<supBtns.length; k++){
-    supBtns[k].addEventListener("click", function(ev){
+  for(var m=0; m<supBtns.length; m++){
+    supBtns[m].addEventListener("click", function(ev){
       ev.stopPropagation();
       deleteClass(ev.currentTarget.getAttribute("data-classe"));
     });
@@ -517,10 +618,11 @@ function deleteClass(nom){
 
 function resetToNoClassSelected(){
   state.currentClass = null;
+  state.currentSessionId = null;
   document.getElementById("topClasseNom").textContent = TXT.aucuneClasse;
   document.getElementById("topbar").style.background = "";
   document.getElementById("carteEleves").classList.add("hidden");
-  document.getElementById("carteContinuer").classList.add("hidden");
+  document.getElementById("carteSessions").classList.add("hidden");
   document.getElementById("fab").classList.add("hidden");
   document.getElementById("view-eval").classList.add("hidden");
   document.getElementById("view-setup").classList.remove("hidden");
@@ -539,20 +641,20 @@ function createClass(){
 
 function selectClass(nom){
   state.currentClass = nom;
+  state.currentSessionId = null;
   ensureClass(nom);
   document.getElementById("topClasseNom").textContent = nom;
   document.getElementById("topbar").style.background = colorForClass(nom);
   document.getElementById("carteEleves").classList.remove("hidden");
+  document.getElementById("carteSessions").classList.remove("hidden");
   var cls = state.db.classes[nom];
   document.getElementById("listeElevesInput").value = cls.students.join("\n");
-  if(cls.students.length > 0){
-    document.getElementById("carteContinuer").classList.remove("hidden");
-  }else{
-    document.getElementById("carteContinuer").classList.add("hidden");
-  }
   document.getElementById("fab").classList.remove("hidden");
+  document.getElementById("nouvelleSessionDate").value = todayISO();
+  document.getElementById("nouvelleSessionTitre").value = "";
   renderClassList();
   renderStudentChips();
+  renderSessionsList();
   document.getElementById("view-eval").classList.add("hidden");
   document.getElementById("view-setup").classList.remove("hidden");
 }
@@ -569,10 +671,8 @@ function saveStudentList(){
   state.db.classes[state.currentClass].students = noms;
   saveDB();
   document.getElementById("listeElevesInput").value = noms.join("\n");
-  if(noms.length > 0){
-    document.getElementById("carteContinuer").classList.remove("hidden");
-  }
   renderStudentChips();
+  renderSessionsList();
   alert("Liste des eleves enregistree (" + noms.length + " eleve(s)).");
 }
 
@@ -609,9 +709,7 @@ function supprimerEleve(idx){
   saveDB();
   document.getElementById("listeElevesInput").value = cls.students.join("\n");
   renderStudentChips();
-  if(cls.students.length === 0){
-    document.getElementById("carteContinuer").classList.add("hidden");
-  }
+  renderSessionsList();
 }
 
 function ajouterUnEleve(){
@@ -624,36 +722,119 @@ function ajouterUnEleve(){
   input.value = "";
   document.getElementById("listeElevesInput").value = cls.students.join("\n");
   renderStudentChips();
-  document.getElementById("carteContinuer").classList.remove("hidden");
-}
-
-function goToEval(){
-  document.getElementById("view-setup").classList.add("hidden");
-  document.getElementById("view-eval").classList.remove("hidden");
-  onCompetenceChange();
+  renderSessionsList();
 }
 
 function changerDeClasse(){
+  state.currentSessionId = null;
   document.getElementById("view-eval").classList.add("hidden");
   document.getElementById("view-setup").classList.remove("hidden");
+  if(state.currentClass){ renderSessionsList(); }
+}
+
+/* ---------- SESSIONS D'EVALUATION ---------- */
+function renderSessionsList(){
+  var zone = document.getElementById("listeSessions");
+  var cls = state.db.classes[state.currentClass];
+  if(!cls.sessions || cls.sessions.length === 0){
+    zone.innerHTML = "<p class=\"aide\">" + TXT.aucuneEval + "</p>";
+    return;
+  }
+  var sorted = cls.sessions.slice().sort(function(a,b){
+    if(a.date === b.date){ return 0; }
+    return a.date < b.date ? 1 : -1;
+  });
+  var html = "";
+  for(var i=0; i<sorted.length; i++){
+    var s = sorted[i];
+    var done = 0;
+    for(var st in s.records){ if(s.records.hasOwnProperty(st)){ done++; } }
+    var total = cls.students.length;
+    html += "<div class=\"session-ligne\">";
+    html += "<div class=\"session-info\">";
+    html += "<div class=\"session-titre\">" + escapeHtml(s.title) + "</div>";
+    html += "<div class=\"session-meta\">" + formatDateOnly(s.date) + " \u2014 " + escapeHtml(COMP_LABELS[s.competence]) + " \u2014 " + done + "/" + total + " " + TXT.eleves + "</div>";
+    html += "</div>";
+    html += "<button class=\"btnOuvrirSession\" data-id=\"" + s.id + "\">Ouvrir</button>";
+    html += "<button class=\"session-sup\" data-id=\"" + s.id + "\" title=\"Supprimer cette evaluation\">\u2715</button>";
+    html += "</div>";
+  }
+  zone.innerHTML = html;
+  var ouvrirBtns = zone.querySelectorAll(".btnOuvrirSession");
+  for(var j=0; j<ouvrirBtns.length; j++){
+    ouvrirBtns[j].addEventListener("click", function(ev){
+      openSession(ev.currentTarget.getAttribute("data-id"));
+    });
+  }
+  var supBtns = zone.querySelectorAll(".session-sup");
+  for(var k=0; k<supBtns.length; k++){
+    supBtns[k].addEventListener("click", function(ev){
+      deleteSession(ev.currentTarget.getAttribute("data-id"));
+    });
+  }
+}
+
+function createSession(){
+  if(!state.currentClass){ return; }
+  var titre = document.getElementById("nouvelleSessionTitre").value.replace(/^\s+|\s+$/g,"");
+  var date = document.getElementById("nouvelleSessionDate").value;
+  var comp = document.getElementById("nouvelleSessionCompetence").value;
+  if(titre === ""){ alert("Merci de donner un titre a cette evaluation."); return; }
+  if(date === ""){ date = todayISO(); }
+  var cls = state.db.classes[state.currentClass];
+  var template = cls.templates[comp];
+  var criteria = (template && template.length > 0) ? JSON.parse(JSON.stringify(template)) : [{ name:"", max:5 }];
+  var session = {
+    id: genId(),
+    title: titre,
+    date: date,
+    competence: comp,
+    criteria: criteria,
+    records: {}
+  };
+  cls.sessions.push(session);
+  saveDB();
+  document.getElementById("nouvelleSessionTitre").value = "";
+  renderSessionsList();
+  openSession(session.id);
+}
+
+function deleteSession(id){
+  var ok = confirm("Supprimer definitivement cette evaluation et toutes les notes saisies pour cette session ?");
+  if(!ok){ return; }
+  var cls = state.db.classes[state.currentClass];
+  for(var i=0; i<cls.sessions.length; i++){
+    if(cls.sessions[i].id === id){ cls.sessions.splice(i,1); break; }
+  }
+  saveDB();
+  renderSessionsList();
+}
+
+function openSession(id){
+  var session = findSession(id);
+  if(!session){ return; }
+  state.currentSessionId = id;
+  state.currentCriteria = session.criteria;
+  document.getElementById("view-setup").classList.add("hidden");
+  document.getElementById("view-eval").classList.remove("hidden");
+  document.getElementById("evalSessionTitre").value = session.title;
+  document.getElementById("evalSessionDate").value = session.date;
+  document.getElementById("evalSessionCompetenceLabel").textContent = COMP_LABELS[session.competence];
+  document.getElementById("panelEleves").classList.add("hidden");
+  renderCriteriaEditor();
+  renderStudentSelectorForSession();
+  window.scrollTo(0,0);
+}
+
+function openSessionAndSelectStudent(sessionId, studentName){
+  openSession(sessionId);
+  var sel = document.getElementById("eleveSelect");
+  sel.value = studentName;
+  onStudentChange();
+  window.scrollTo(0,0);
 }
 
 /* ---------- BAREME / CRITERES ---------- */
-function onCompetenceChange(){
-  state.currentCompetence = document.getElementById("competenceSelect").value;
-  var cls = state.db.classes[state.currentClass];
-  var template = cls.templates[state.currentCompetence];
-  if(template && template.length > 0){
-    state.currentCriteria = JSON.parse(JSON.stringify(template));
-  }else{
-    state.currentCriteria = [
-      { name:"", max:5 }
-    ];
-  }
-  renderCriteriaEditor();
-  document.getElementById("carteEvalEleve").classList.add("hidden");
-}
-
 function renderCriteriaEditor(){
   var zone = document.getElementById("criteresEditeur");
   var html = "";
@@ -710,15 +891,19 @@ function validateBareme(){
     return;
   }
   state.currentCriteria = valides;
-  state.db.classes[state.currentClass].templates[state.currentCompetence] = JSON.parse(JSON.stringify(valides));
+  var session = findSession(state.currentSessionId);
+  var cls = state.db.classes[state.currentClass];
+  if(session){
+    session.criteria = valides;
+    cls.templates[session.competence] = JSON.parse(JSON.stringify(valides));
+  }
   saveDB();
   renderCriteriaEditor();
-  renderStudentSelector();
-  document.getElementById("carteEvalEleve").classList.remove("hidden");
+  onStudentChange();
 }
 
 /* ---------- SELECTION ELEVE ET SAISIE ---------- */
-function renderStudentSelector(){
+function renderStudentSelectorForSession(){
   var sel = document.getElementById("eleveSelect");
   var cls = state.db.classes[state.currentClass];
   var html = "";
@@ -729,19 +914,25 @@ function renderStudentSelector(){
   if(cls.students.length > 0){
     state.currentStudent = cls.students[0];
     sel.value = state.currentStudent;
+  }else{
+    state.currentStudent = null;
   }
   onStudentChange();
 }
 
 function onStudentChange(){
   state.currentStudent = document.getElementById("eleveSelect").value;
-  state.editingRecordIndex = null;
-  document.getElementById("btnAnnulerEdition").classList.add("hidden");
-  renderScoreInputs(null);
-  document.getElementById("appreciationInput").value = "";
-  document.getElementById("conseilsInput").value = "";
-  document.getElementById("recommandationsInput").value = "";
+  var session = findSession(state.currentSessionId);
+  var rec = (session && state.currentStudent && session.records[state.currentStudent]) ? session.records[state.currentStudent] : null;
+  renderScoreInputs(rec);
+  document.getElementById("pointAnglaisInput").value = rec ? (rec.pointAnglais || "") : "";
+  document.getElementById("appreciationInput").value = rec ? (rec.appreciation || "") : "";
+  document.getElementById("conseilsInput").value = rec ? (rec.conseils || "") : "";
+  document.getElementById("recommandationsInput").value = rec ? (rec.recommandations || "") : "";
   renderHistorique();
+  if(!document.getElementById("panelEleves").classList.contains("hidden")){
+    renderElevesPanel();
+  }
 }
 
 function renderScoreInputs(existingRecord){
@@ -750,8 +941,10 @@ function renderScoreInputs(existingRecord){
   for(var i=0; i<state.currentCriteria.length; i++){
     var c = state.currentCriteria[i];
     var valeur = "";
-    if(existingRecord && existingRecord.criteria && existingRecord.criteria[i]){
-      valeur = existingRecord.criteria[i].score;
+    if(existingRecord && existingRecord.criteria){
+      for(var k=0; k<existingRecord.criteria.length; k++){
+        if(existingRecord.criteria[k].name === c.name){ valeur = existingRecord.criteria[k].score; break; }
+      }
     }
     html += "<div class=\"score-ligne\">";
     html += "<div class=\"nom\">" + escapeHtml(c.name) + "<small>sur " + c.max + " point(s)</small></div>";
@@ -764,12 +957,6 @@ function renderScoreInputs(existingRecord){
     inputs[j].addEventListener("input", updateTotal);
   }
   updateTotal();
-}
-
-function getMaxTotal(){
-  var m = 0;
-  for(var i=0; i<state.currentCriteria.length; i++){ m += (state.currentCriteria[i].max || 0); }
-  return round1(m);
 }
 
 function normalizeScoreValue(raw){
@@ -834,33 +1021,25 @@ function collectCurrentScores(){
 
 function saveEvaluation(advanceToNext){
   if(!state.currentStudent){ alert("Selectionnez un eleve."); return; }
-  var cls = state.db.classes[state.currentClass];
-  if(!cls.evaluations[state.currentStudent]){ cls.evaluations[state.currentStudent] = {}; }
-  if(!cls.evaluations[state.currentStudent][state.currentCompetence]){ cls.evaluations[state.currentStudent][state.currentCompetence] = []; }
-
+  var session = findSession(state.currentSessionId);
+  if(!session){ return; }
   var data = collectCurrentScores();
   var record = {
-    date: new Date().toISOString(),
     criteria: data.criteria,
     total: data.total,
     maxTotal: data.maxTotal,
+    pointAnglais: document.getElementById("pointAnglaisInput").value,
     appreciation: document.getElementById("appreciationInput").value,
     conseils: document.getElementById("conseilsInput").value,
-    recommandations: document.getElementById("recommandationsInput").value
+    recommandations: document.getElementById("recommandationsInput").value,
+    savedAt: new Date().toISOString()
   };
-
-  var arr = cls.evaluations[state.currentStudent][state.currentCompetence];
-  if(state.editingRecordIndex !== null){
-    record.date = arr[state.editingRecordIndex].date;
-    arr[state.editingRecordIndex] = record;
-  }else{
-    arr.push(record);
-  }
+  session.records[state.currentStudent] = record;
   saveDB();
-  state.editingRecordIndex = null;
-  document.getElementById("btnAnnulerEdition").classList.add("hidden");
   renderHistorique();
-
+  if(!document.getElementById("panelEleves").classList.contains("hidden")){
+    renderElevesPanel();
+  }
   if(advanceToNext){
     goToNextStudent();
   }else{
@@ -880,72 +1059,99 @@ function goToNextStudent(){
   }
 }
 
-function cancelEdition(){
-  state.editingRecordIndex = null;
-  document.getElementById("btnAnnulerEdition").classList.add("hidden");
-  renderScoreInputs(null);
-  document.getElementById("appreciationInput").value = "";
-  document.getElementById("conseilsInput").value = "";
-  document.getElementById("recommandationsInput").value = "";
+/* ---------- PANNEAU ELEVES ---------- */
+function toggleElevesPanel(){
+  var panel = document.getElementById("panelEleves");
+  panel.classList.toggle("hidden");
+  if(!panel.classList.contains("hidden")){ renderElevesPanel(); }
 }
 
-/* ---------- HISTORIQUE / PROGRESSION ---------- */
-function getRecords(studentName, competence){
+function renderElevesPanel(){
+  var zone = document.getElementById("panelEleves");
   var cls = state.db.classes[state.currentClass];
-  if(!cls || !cls.evaluations[studentName] || !cls.evaluations[studentName][competence]){ return []; }
-  return cls.evaluations[studentName][competence];
-}
-
-function renderHistorique(){
-  var zone = document.getElementById("historiqueZone");
-  var records = getRecords(state.currentStudent, state.currentCompetence);
-  if(records.length === 0){
-    zone.innerHTML = "<p class=\"aide\">Aucune evaluation enregistree pour l'instant sur cette competence.</p>";
-    return;
-  }
-  var sorted = records.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
+  var session = findSession(state.currentSessionId);
+  if(!cls || !session){ zone.innerHTML = ""; return; }
   var html = "";
-  var prevPct = null;
-  for(var i=0; i<sorted.length; i++){
-    var rec = sorted[i];
-    var isAbs = (rec.total === "ABS");
-    var fleche = { symb:"—", cls:"fleche-flat" };
-    var totalTxt = isAbs ? "ABS" : (rec.total + " / " + rec.maxTotal);
-    if(!isAbs){
-      var pct = rec.maxTotal > 0 ? (rec.total / rec.maxTotal) : 0;
-      if(prevPct !== null){
-        fleche = arrowSymbol(pct - prevPct);
-      }
-      prevPct = pct;
-    }
-    var realIdx = records.indexOf(rec);
-    html += "<div class=\"hist-ligne\">";
-    html += "<div>" + formatDate(rec.date) + " — " + totalTxt + "</div>";
-    html += "<div class=\"fleche " + fleche.cls + "\">" + fleche.symb + "</div>";
-    html += "<button data-idx=\"" + realIdx + "\" class=\"btnChargerHist\">Modifier</button>";
-    html += "</div>";
+  for(var i=0; i<cls.students.length; i++){
+    var nom = cls.students[i];
+    var rec = session.records[nom];
+    var statut, classeStatut;
+    if(!rec){ statut = TXT.aEvaluer; classeStatut = "statut-attente"; }
+    else if(rec.total === "ABS"){ statut = "ABS"; classeStatut = "statut-abs"; }
+    else{ statut = rec.total + "/" + rec.maxTotal; classeStatut = "statut-fait"; }
+    var actif = (nom === state.currentStudent) ? " actif" : "";
+    html += "<button class=\"eleve-panel-item" + actif + "\" data-nom=\"" + escapeHtml(nom) + "\">";
+    html += "<span>" + escapeHtml(nom) + "</span><span class=\"statut " + classeStatut + "\">" + statut + "</span>";
+    html += "</button>";
   }
-  zone.innerHTML = html;
-  var btns = zone.querySelectorAll(".btnChargerHist");
-  for(var j=0; j<btns.length; j++){
-    btns[j].addEventListener("click", function(ev){
-      var idx = parseInt(ev.currentTarget.getAttribute("data-idx"), 10);
-      loadRecordForEditing(idx);
+  zone.innerHTML = html || "<p class=\"aide\">Aucun eleve dans cette classe.</p>";
+  var items = zone.querySelectorAll(".eleve-panel-item");
+  for(var j=0; j<items.length; j++){
+    items[j].addEventListener("click", function(ev){
+      var nom = ev.currentTarget.getAttribute("data-nom");
+      document.getElementById("eleveSelect").value = nom;
+      onStudentChange();
+      document.getElementById("panelEleves").classList.add("hidden");
     });
   }
 }
 
-function loadRecordForEditing(idx){
-  var records = getRecords(state.currentStudent, state.currentCompetence);
-  var rec = records[idx];
-  if(!rec){ return; }
-  state.editingRecordIndex = idx;
-  document.getElementById("btnAnnulerEdition").classList.remove("hidden");
-  renderScoreInputs(rec);
-  document.getElementById("appreciationInput").value = rec.appreciation || "";
-  document.getElementById("conseilsInput").value = rec.conseils || "";
-  document.getElementById("recommandationsInput").value = rec.recommandations || "";
-  window.scrollTo(0,0);
+/* ---------- HISTORIQUE / PROGRESSION ---------- */
+function getStudentCompetenceHistory(cls, studentName, competence){
+  var list = [];
+  for(var i=0; i<cls.sessions.length; i++){
+    var s = cls.sessions[i];
+    if(s.competence !== competence){ continue; }
+    var rec = s.records[studentName];
+    if(!rec){ continue; }
+    list.push({ sessionId: s.id, sessionTitle: s.title, date: s.date, record: rec });
+  }
+  list.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+  return list;
+}
+
+function renderHistorique(){
+  var zone = document.getElementById("historiqueZone");
+  var session = findSession(state.currentSessionId);
+  if(!session || !state.currentStudent){
+    zone.innerHTML = "<p class=\"aide\">Aucune evaluation enregistree pour l'instant sur cette competence.</p>";
+    return;
+  }
+  var cls = state.db.classes[state.currentClass];
+  var hist = getStudentCompetenceHistory(cls, state.currentStudent, session.competence);
+  if(hist.length === 0){
+    zone.innerHTML = "<p class=\"aide\">Aucune evaluation enregistree pour l'instant sur cette competence.</p>";
+    return;
+  }
+  var html = "";
+  var prevPct = null;
+  for(var i=0; i<hist.length; i++){
+    var item = hist[i];
+    var isAbs = (item.record.total === "ABS");
+    var fleche = { symb:"\u2014", cls:"fleche-flat" };
+    var totalTxt = isAbs ? "ABS" : (item.record.total + " / " + item.record.maxTotal);
+    if(!isAbs){
+      var pct = item.record.maxTotal > 0 ? (item.record.total / item.record.maxTotal) : 0;
+      if(prevPct !== null){ fleche = arrowSymbol(pct - prevPct); }
+      prevPct = pct;
+    }
+    var estActuelle = (item.sessionId === state.currentSessionId);
+    html += "<div class=\"hist-ligne" + (estActuelle ? " hist-actuelle" : "") + "\">";
+    html += "<div><b>" + escapeHtml(item.sessionTitle) + "</b> \u2014 " + formatDateOnly(item.date) + " \u2014 " + totalTxt + "</div>";
+    html += "<div class=\"fleche " + fleche.cls + "\">" + fleche.symb + "</div>";
+    if(!estActuelle){
+      html += "<button class=\"histOuvrir\" data-sid=\"" + item.sessionId + "\">Ouvrir</button>";
+    }
+    html += "</div>";
+  }
+  zone.innerHTML = html;
+  var studentSnapshot = state.currentStudent;
+  var btns = zone.querySelectorAll(".histOuvrir");
+  for(var j=0; j<btns.length; j++){
+    btns[j].addEventListener("click", function(ev){
+      openSessionAndSelectStudent(ev.currentTarget.getAttribute("data-sid"), studentSnapshot);
+    });
+  }
 }
 
 /* ---------- PDF / IMPRESSION ---------- */
@@ -963,49 +1169,47 @@ function buildStudentPageHTML(studentName){
   var comps = ["POC","POI"];
   for(var c=0; c<comps.length; c++){
     var code = comps[c];
-    var records = getRecords(studentName, code);
+    var hist = getStudentCompetenceHistory(cls, studentName, code);
     html += "<h2>" + escapeHtml(COMP_LABELS[code]) + "</h2>";
-    if(records.length === 0){
+    if(hist.length === 0){
       html += "<div class=\"bloc\">" + TXT.nonEvalue + "</div>";
       continue;
     }
-    var sorted = records.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
-    var last = sorted[sorted.length - 1];
+    var last = hist[hist.length - 1];
+    html += "<div class=\"bloc\"><b>" + TXT.derniereEval + "</b>" + escapeHtml(last.sessionTitle) + " \u2014 " + formatDateOnly(last.date) + "</div>";
 
     html += "<table><tr><th>Critere</th><th>Points</th><th>Note</th></tr>";
-    for(var k=0; k<last.criteria.length; k++){
-      var cr = last.criteria[k];
+    for(var k=0; k<last.record.criteria.length; k++){
+      var cr = last.record.criteria[k];
       html += "<tr><td>" + escapeHtml(cr.name) + "</td><td>" + cr.max + "</td><td>" + cr.score + "</td></tr>";
     }
     html += "</table>";
-    var totalLigne = (last.total === "ABS") ? "Total : ABS" : ("Total : " + last.total + " / " + last.maxTotal);
-    html += "<div class=\"totalPrint\">" + totalLigne + " (" + formatDate(last.date) + ")</div>";
+    var totalLigne = (last.record.total === "ABS") ? "Total : ABS" : ("Total : " + last.record.total + " / " + last.record.maxTotal);
+    html += "<div class=\"totalPrint\">" + totalLigne + "</div>";
 
-    if(sorted.length > 1){
-      html += "<h3>Historique des \u00e9valuations \u2014 " + escapeHtml(COMP_LABELS[code]) + "</h3>";
-      html += "<table><tr><th>Date</th><th>Note</th><th>Progression</th></tr>";
-      var prevPctPdf = null;
-      for(var s=0; s<sorted.length; s++){
-        var r = sorted[s];
-        var isAbsPdf = (r.total === "ABS");
-        var arrowTxt = "—";
-        var totalCell = isAbsPdf ? "ABS" : (r.total + " / " + r.maxTotal);
-        if(!isAbsPdf){
-          var pct = r.maxTotal > 0 ? (r.total / r.maxTotal) : 0;
-          if(prevPctPdf !== null){
-            var a = arrowSymbol(pct - prevPctPdf);
-            arrowTxt = a.symb;
-          }
-          prevPctPdf = pct;
+    if(hist.length > 1){
+      html += "<h3>" + TXT.historique + " \u2014 " + escapeHtml(COMP_LABELS[code]) + "</h3>";
+      html += "<table><tr><th>Evaluation</th><th>Date</th><th>Note</th><th>Progression</th></tr>";
+      var prevPct = null;
+      for(var i=0; i<hist.length; i++){
+        var item = hist[i];
+        var isAbs = (item.record.total === "ABS");
+        var totalCell = isAbs ? "ABS" : (item.record.total + " / " + item.record.maxTotal);
+        var arrowTxt = "\u2014";
+        if(!isAbs){
+          var pct = item.record.maxTotal > 0 ? (item.record.total / item.record.maxTotal) : 0;
+          if(prevPct !== null){ var a = arrowSymbol(pct - prevPct); arrowTxt = a.symb; }
+          prevPct = pct;
         }
-        html += "<tr><td>" + formatDate(r.date) + "</td><td>" + totalCell + "</td><td>" + arrowTxt + "</td></tr>";
+        html += "<tr><td>" + escapeHtml(item.sessionTitle) + "</td><td>" + formatDateOnly(item.date) + "</td><td>" + totalCell + "</td><td>" + arrowTxt + "</td></tr>";
       }
       html += "</table>";
     }
 
-    html += "<div class=\"bloc\"><b>" + TXT.Appreciation + " " + TXT.generale + "</b>" + nl2br(last.appreciation) + "</div>";
-    html += "<div class=\"bloc\"><b>Conseils</b>" + nl2br(last.conseils) + "</div>";
-    html += "<div class=\"bloc\"><b>Recommandations de travail</b>" + nl2br(last.recommandations) + "</div>";
+    html += "<div class=\"bloc\"><b>" + TXT.pointAnglais + "</b>" + nl2br(last.record.pointAnglais) + "</div>";
+    html += "<div class=\"bloc\"><b>" + TXT.Appreciation + " " + TXT.generale + "</b>" + nl2br(last.record.appreciation) + "</div>";
+    html += "<div class=\"bloc\"><b>Conseils</b>" + nl2br(last.record.conseils) + "</div>";
+    html += "<div class=\"bloc\"><b>Recommandations de travail</b>" + nl2br(last.record.recommandations) + "</div>";
   }
 
   html += "</div>";
@@ -1045,17 +1249,31 @@ document.addEventListener("DOMContentLoaded", function(){
   document.getElementById("ajoutEleveInput").addEventListener("keydown", function(ev){
     if(ev.key === "Enter"){ ajouterUnEleve(); }
   });
-  document.getElementById("btnAllerEval").addEventListener("click", goToEval);
   document.getElementById("btnChangerClasse").addEventListener("click", changerDeClasse);
+  document.getElementById("btnCreerSession").addEventListener("click", createSession);
 
-  document.getElementById("competenceSelect").addEventListener("change", onCompetenceChange);
+  document.getElementById("evalSessionTitre").addEventListener("change", function(){
+    var session = findSession(state.currentSessionId);
+    if(session){
+      session.title = document.getElementById("evalSessionTitre").value;
+      saveDB();
+    }
+  });
+  document.getElementById("evalSessionDate").addEventListener("change", function(){
+    var session = findSession(state.currentSessionId);
+    if(session){
+      session.date = document.getElementById("evalSessionDate").value;
+      saveDB();
+    }
+  });
+
   document.getElementById("btnAjouterCritere").addEventListener("click", addCriterionRow);
   document.getElementById("btnValiderBareme").addEventListener("click", validateBareme);
 
   document.getElementById("eleveSelect").addEventListener("change", onStudentChange);
+  document.getElementById("btnElevesPanel").addEventListener("click", toggleElevesPanel);
   document.getElementById("btnEnregistrerEval").addEventListener("click", function(){ saveEvaluation(false); });
   document.getElementById("btnEleveSuivant").addEventListener("click", function(){ saveEvaluation(true); });
-  document.getElementById("btnAnnulerEdition").addEventListener("click", cancelEdition);
 
   document.getElementById("fabBtn").addEventListener("click", toggleFabMenu);
   document.getElementById("fabPdfEleve").addEventListener("click", printSingleStudent);
