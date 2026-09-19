@@ -123,6 +123,15 @@
   }
   .total-box span{font-size:14px; font-weight:400; display:block; opacity:.85;}
 
+  #absenceStatusZone{background:#fff8f0; border:1px solid #f3d9b1; border-radius:10px; padding:10px;}
+  .btn-abs-status{
+    background:#fff; border:1.5px solid var(--bordure); padding:10px 8px; font-size:13px; font-weight:600;
+    text-align:center;
+  }
+  .btn-abs-status[data-val="justifiee"].actif{background:var(--vert); color:#fff; border-color:var(--vert);}
+  .btn-abs-status[data-val="injustifiee"].actif{background:var(--rouge); color:#fff; border-color:var(--rouge);}
+  .btn-abs-status[data-val="attente"].actif{background:#b45309; color:#fff; border-color:#b45309;}
+
   .hist-ligne{
     display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px;
     background:#f7f9fc; border-radius:8px; margin-bottom:6px; font-size:13px;
@@ -285,6 +294,7 @@ Nom Prénom
         <select id="nouvelleSessionCompetence">
           <option value="POC">Production orale en continu</option>
           <option value="POI">Production orale en interaction</option>
+          <option value="EE">Expression écrite</option>
         </select>
         <button class="btn btn-vert btn-large" id="btnCreerSession" style="margin-top:12px;">Créer cette évaluation</button>
       </div>
@@ -324,6 +334,15 @@ Nom Prénom
         <p class="aide">Saisissez une note pour chaque critère, ou tapez ABS si l'élève était absent sur ce critère.</p>
 
         <div class="total-box" id="totalBox">0 / 0<span>Total</span></div>
+
+        <div id="absenceStatusZone" class="hidden">
+          <label style="margin-top:0;">Statut de l'absence</label>
+          <div class="row">
+            <button type="button" class="btn btn-abs-status" data-val="justifiee">Absence justifiée</button>
+            <button type="button" class="btn btn-abs-status" data-val="injustifiee">Absence injustifiée</button>
+            <button type="button" class="btn btn-abs-status" data-val="attente">En attente de justification</button>
+          </div>
+        </div>
 
         <label>Point d'anglais à revoir</label>
         <textarea id="pointAnglaisInput" placeholder="Point de langue prioritaire à retravailler..."></textarea>
@@ -399,9 +418,22 @@ var TXT = {
   aucuneClasse: "Aucune classe s\u00e9lectionn\u00e9e"
 };
 
+var ABSENCE_LABELS = {
+  justifiee: "Absence justifi\u00e9e",
+  injustifiee: "Absence injustifi\u00e9e",
+  attente: "En attente de justification"
+};
+
+var ABSENCE_SHORT = {
+  justifiee: "Justifi\u00e9e",
+  injustifiee: "Injustifi\u00e9e",
+  attente: "Attente justif."
+};
+
 var COMP_LABELS = {
   POC: "Production orale en continu",
-  POI: "Production orale en interaction"
+  POI: "Production orale en interaction",
+  EE: "Expression \u00e9crite"
 };
 
 var state = {
@@ -409,7 +441,8 @@ var state = {
   currentClass: null,
   currentSessionId: null,
   currentCriteria: [],
-  currentStudent: null
+  currentStudent: null,
+  currentAbsenceStatus: null
 };
 
 var idCounter = 0;
@@ -1040,6 +1073,7 @@ function onStudentChange(){
   var session = findSession(state.currentSessionId);
   var rec = (session && state.currentStudent && session.records[state.currentStudent]) ? session.records[state.currentStudent] : null;
   document.getElementById("evalStudentDate").value = rec && rec.date ? rec.date : todayISO();
+  state.currentAbsenceStatus = rec && rec.absenceStatus ? rec.absenceStatus : null;
   renderScoreInputs(rec);
   document.getElementById("pointAnglaisInput").value = rec ? (rec.pointAnglais || "") : "";
   document.getElementById("appreciationInput").value = rec ? (rec.appreciation || "") : "";
@@ -1108,6 +1142,23 @@ function updateTotal(){
     var suffix = absCount > 0 ? (" (" + absCount + " crit. ABS)") : "";
     box.innerHTML = round1(total) + " / " + round1(maxCounted) + suffix + "<span>Total</span>";
   }
+  var zoneAbs = document.getElementById("absenceStatusZone");
+  if(absCount > 0){
+    zoneAbs.classList.remove("hidden");
+  }else{
+    zoneAbs.classList.add("hidden");
+    state.currentAbsenceStatus = null;
+  }
+  refreshAbsenceButtonsUI();
+}
+
+function refreshAbsenceButtonsUI(){
+  var btns = document.querySelectorAll(".btn-abs-status");
+  for(var i=0; i<btns.length; i++){
+    var val = btns[i].getAttribute("data-val");
+    if(val === state.currentAbsenceStatus){ btns[i].classList.add("actif"); }
+    else{ btns[i].classList.remove("actif"); }
+  }
 }
 
 function collectCurrentScores(){
@@ -1147,6 +1198,7 @@ function saveEvaluation(advanceToNext){
     criteria: data.criteria,
     total: data.total,
     maxTotal: data.maxTotal,
+    absenceStatus: state.currentAbsenceStatus,
     pointAnglais: document.getElementById("pointAnglaisInput").value,
     appreciation: document.getElementById("appreciationInput").value,
     conseils: document.getElementById("conseilsInput").value,
@@ -1197,7 +1249,7 @@ function renderElevesPanel(){
     var rec = session.records[nom];
     var statut, classeStatut;
     if(!rec){ statut = TXT.aEvaluer; classeStatut = "statut-attente"; }
-    else if(rec.total === "ABS"){ statut = "ABS"; classeStatut = "statut-abs"; }
+    else if(rec.total === "ABS"){ statut = rec.absenceStatus ? ("ABS \u2022 " + ABSENCE_SHORT[rec.absenceStatus]) : "ABS"; classeStatut = "statut-abs"; }
     else{ statut = rec.total + "/" + rec.maxTotal; classeStatut = "statut-fait"; }
     var actif = (nom === state.currentStudent) ? " actif" : "";
     html += "<button class=\"eleve-panel-item" + actif + "\" data-nom=\"" + escapeHtml(nom) + "\">";
@@ -1249,7 +1301,7 @@ function renderHistorique(){
     var item = hist[i];
     var isAbs = (item.record.total === "ABS");
     var fleche = { symb:"\u2014", cls:"fleche-flat" };
-    var totalTxt = isAbs ? "ABS" : (item.record.total + " / " + item.record.maxTotal);
+    var totalTxt = isAbs ? ("ABS" + (item.record.absenceStatus ? " (" + ABSENCE_LABELS[item.record.absenceStatus] + ")" : "")) : (item.record.total + " / " + item.record.maxTotal);
     if(!isAbs){
       var pct = item.record.maxTotal > 0 ? (item.record.total / item.record.maxTotal) : 0;
       if(prevPct !== null){ fleche = arrowSymbol(pct - prevPct); }
@@ -1286,7 +1338,7 @@ function buildStudentPageHTML(studentName){
   html += "<div class=\"bloc\"><b>Classe</b>" + escapeHtml(state.currentClass) + "</div>";
   html += "<div class=\"bloc\"><b>" + TXT.Genere + "</b>" + formatDate(new Date().toISOString()) + "</div>";
 
-  var comps = ["POC","POI"];
+  var comps = ["POC","POI","EE"];
   for(var c=0; c<comps.length; c++){
     var code = comps[c];
     var hist = getStudentCompetenceHistory(cls, studentName, code);
@@ -1306,22 +1358,26 @@ function buildStudentPageHTML(studentName){
     html += "</table>";
     var totalLigne = (last.record.total === "ABS") ? "Total : ABS" : ("Total : " + last.record.total + " / " + last.record.maxTotal);
     html += "<div class=\"totalPrint\">" + totalLigne + "</div>";
+    if(last.record.total === "ABS" && last.record.absenceStatus){
+      html += "<div class=\"bloc\"><b>Statut de l'absence</b>" + ABSENCE_LABELS[last.record.absenceStatus] + "</div>";
+    }
 
     if(hist.length > 1){
       html += "<h3>" + TXT.historique + " \u2014 " + escapeHtml(COMP_LABELS[code]) + "</h3>";
-      html += "<table><tr><th>Evaluation</th><th>Date</th><th>Note</th><th>Progression</th></tr>";
+      html += "<table><tr><th>Evaluation</th><th>Date</th><th>Note</th><th>Progression</th><th>Absence</th></tr>";
       var prevPct = null;
       for(var i=0; i<hist.length; i++){
         var item = hist[i];
         var isAbs = (item.record.total === "ABS");
         var totalCell = isAbs ? "ABS" : (item.record.total + " / " + item.record.maxTotal);
+        var absCell = (isAbs && item.record.absenceStatus) ? ABSENCE_LABELS[item.record.absenceStatus] : "";
         var arrowTxt = "\u2014";
         if(!isAbs){
           var pct = item.record.maxTotal > 0 ? (item.record.total / item.record.maxTotal) : 0;
           if(prevPct !== null){ var a = arrowSymbol(pct - prevPct); arrowTxt = a.symb; }
           prevPct = pct;
         }
-        html += "<tr><td>" + escapeHtml(item.sessionTitle) + "</td><td>" + formatDateOnly(item.date) + "</td><td>" + totalCell + "</td><td>" + arrowTxt + "</td></tr>";
+        html += "<tr><td>" + escapeHtml(item.sessionTitle) + "</td><td>" + formatDateOnly(item.date) + "</td><td>" + totalCell + "</td><td>" + arrowTxt + "</td><td>" + absCell + "</td></tr>";
       }
       html += "</table>";
     }
@@ -1387,6 +1443,15 @@ document.addEventListener("DOMContentLoaded", function(){
 
   document.getElementById("eleveSelect").addEventListener("change", onStudentChange);
   document.getElementById("btnElevesPanel").addEventListener("click", toggleElevesPanel);
+
+  var absStatusBtns = document.querySelectorAll(".btn-abs-status");
+  for(var absI=0; absI<absStatusBtns.length; absI++){
+    absStatusBtns[absI].addEventListener("click", function(ev){
+      var val = ev.currentTarget.getAttribute("data-val");
+      state.currentAbsenceStatus = (state.currentAbsenceStatus === val) ? null : val;
+      refreshAbsenceButtonsUI();
+    });
+  }
   document.getElementById("btnEnregistrerEval").addEventListener("click", function(){ saveEvaluation(false); });
   document.getElementById("btnEleveSuivant").addEventListener("click", function(){ saveEvaluation(true); });
 
