@@ -101,6 +101,20 @@
     padding:10px 14px; border-radius:10px; border:1.5px solid var(--bordure); background:#fbfcfe; font-size:14px;
   }
   .classe-btn.actif{background:var(--bleu); color:#fff; border-color:var(--bleu);}
+  .classe-item{position:relative; display:inline-flex;}
+  .classe-item .classe-btn{padding-right:36px;}
+  .classe-item .classe-sup{
+    position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:var(--rouge); font-size:15px; padding:6px; line-height:1;
+  }
+  .chip-eleve{
+    display:inline-flex; align-items:center; gap:8px; background:#eef3fa; border:1px solid #cfe0f2;
+    padding:6px 6px 6px 12px; border-radius:20px; font-size:13px; margin:3px;
+  }
+  .chip-eleve .chipSup{
+    background:#fff; border:1px solid #f3c9c9; color:var(--rouge); border-radius:50%;
+    width:24px; height:24px; font-size:12px; line-height:1; padding:0;
+  }
 
   .critere-ligne{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
   .critere-ligne input[type=text]{flex:3;}
@@ -167,6 +181,7 @@
     .page:last-child{page-break-after:auto;}
     .page h1{font-size:20px; border-bottom:2px solid #333; padding-bottom:6px;}
     .page h2{font-size:15px; color:#1d5fa8; margin-top:18px;}
+    .page h3{font-size:13px; color:#374151; margin-top:12px; margin-bottom:4px;}
     .page table{width:100%; border-collapse:collapse; font-size:13px; margin:8px 0;}
     .page table td, .page table th{border:1px solid #999; padding:5px 8px; text-align:left;}
     .page .bloc{margin-bottom:6px; font-size:13px;}
@@ -213,11 +228,19 @@
 
       <div class="carte hidden" id="carteEleves">
         <h2>2. Liste des élèves</h2>
-        <p class="aide">Un nom par ligne. Cette liste est enregistrée pour cette classe et réutilisée à chaque évaluation.</p>
+        <p class="aide">Un nom par ligne (collage rapide en début d'année). Cette liste est enregistrée pour cette classe et réutilisée à chaque évaluation.</p>
         <textarea id="listeElevesInput" placeholder="Nom Prénom
 Nom Prénom
 ..."></textarea>
         <button class="btn btn-bleu btn-large" id="btnSauverEleves" style="margin-top:10px;">Enregistrer la liste</button>
+
+        <hr class="separateur">
+        <label>Ajouter un élève</label>
+        <div class="row">
+          <input type="text" id="ajoutEleveInput" placeholder="Nom du nouvel élève">
+          <button class="btn btn-bleu" id="btnAjouterEleve" style="flex:none;">Ajouter</button>
+        </div>
+        <div id="listeElevesChips" style="margin-top:10px;"></div>
       </div>
 
       <div class="carte hidden" id="carteContinuer">
@@ -250,6 +273,7 @@ Nom Prénom
         <select id="eleveSelect" class="eleve-select"></select>
 
         <div id="scoresZone" style="margin-top:14px;"></div>
+        <p class="aide">Saisissez une note pour chaque critère, ou tapez ABS si l'élève était absent sur ce critère.</p>
 
         <div class="total-box" id="totalBox">0 / 0<span>Total</span></div>
 
@@ -293,6 +317,21 @@ Nom Prénom
 var ACCESS_CODE = "0504";
 var STORAGE_KEY = "oralEvalDB_v1";
 
+var CLASS_COLORS = ["#123f73","#7c3aed","#0f766e","#b45309","#be123c","#166534","#1d4ed8","#9333ea","#0e7490","#a21caf","#374151","#c2410c"];
+
+function hashString(s){
+  var h = 0;
+  for(var i=0; i<s.length; i++){
+    h = ((h << 5) - h) + s.charCodeAt(i);
+    h = h & h;
+  }
+  return Math.abs(h);
+}
+
+function colorForClass(nom){
+  return CLASS_COLORS[hashString(nom) % CLASS_COLORS.length];
+}
+
 var TXT = {
   eleve: "\u00c9l\u00e8ve",
   Eleve: "\u00c9l\u00e8ve",
@@ -316,7 +355,8 @@ var TXT = {
   arrowDown: "\u25BC",
   arrowFlat: "\u25B6",
   Genere: "G\u00e9n\u00e9r\u00e9",
-  classeCompl: "Classe compl\u00e8te"
+  classeCompl: "Classe compl\u00e8te",
+  aucuneClasse: "Aucune classe s\u00e9lectionn\u00e9e"
 };
 
 var COMP_LABELS = {
@@ -441,7 +481,12 @@ function renderClassList(){
   for(var i=0; i<names.length; i++){
     var nom = names[i];
     var actif = (nom === state.currentClass) ? " actif" : "";
-    html += "<button class=\"classe-btn" + actif + "\" data-classe=\"" + escapeHtml(nom) + "\">" + escapeHtml(nom) + "</button>";
+    var couleur = colorForClass(nom);
+    var styleBtn = actif ? ("background:" + couleur + "; border-color:" + couleur + ";") : ("border-left:6px solid " + couleur + ";");
+    html += "<span class=\"classe-item\">";
+    html += "<button class=\"classe-btn" + actif + "\" data-classe=\"" + escapeHtml(nom) + "\" style=\"" + styleBtn + "\">" + escapeHtml(nom) + "</button>";
+    html += "<button class=\"classe-sup\" data-classe=\"" + escapeHtml(nom) + "\" title=\"Supprimer cette classe\">\u2715</button>";
+    html += "</span>";
   }
   zone.innerHTML = html;
   var btns = zone.querySelectorAll(".classe-btn");
@@ -450,6 +495,35 @@ function renderClassList(){
       selectClass(ev.currentTarget.getAttribute("data-classe"));
     });
   }
+  var supBtns = zone.querySelectorAll(".classe-sup");
+  for(var k=0; k<supBtns.length; k++){
+    supBtns[k].addEventListener("click", function(ev){
+      ev.stopPropagation();
+      deleteClass(ev.currentTarget.getAttribute("data-classe"));
+    });
+  }
+}
+
+function deleteClass(nom){
+  var ok = confirm("Supprimer definitivement la classe \"" + nom + "\" et toutes ses evaluations enregistrees ? Cette action est irreversible.");
+  if(!ok){ return; }
+  delete state.db.classes[nom];
+  saveDB();
+  if(state.currentClass === nom){
+    resetToNoClassSelected();
+  }
+  renderClassList();
+}
+
+function resetToNoClassSelected(){
+  state.currentClass = null;
+  document.getElementById("topClasseNom").textContent = TXT.aucuneClasse;
+  document.getElementById("topbar").style.background = "";
+  document.getElementById("carteEleves").classList.add("hidden");
+  document.getElementById("carteContinuer").classList.add("hidden");
+  document.getElementById("fab").classList.add("hidden");
+  document.getElementById("view-eval").classList.add("hidden");
+  document.getElementById("view-setup").classList.remove("hidden");
 }
 
 function createClass(){
@@ -467,6 +541,7 @@ function selectClass(nom){
   state.currentClass = nom;
   ensureClass(nom);
   document.getElementById("topClasseNom").textContent = nom;
+  document.getElementById("topbar").style.background = colorForClass(nom);
   document.getElementById("carteEleves").classList.remove("hidden");
   var cls = state.db.classes[nom];
   document.getElementById("listeElevesInput").value = cls.students.join("\n");
@@ -477,6 +552,7 @@ function selectClass(nom){
   }
   document.getElementById("fab").classList.remove("hidden");
   renderClassList();
+  renderStudentChips();
   document.getElementById("view-eval").classList.add("hidden");
   document.getElementById("view-setup").classList.remove("hidden");
 }
@@ -496,7 +572,59 @@ function saveStudentList(){
   if(noms.length > 0){
     document.getElementById("carteContinuer").classList.remove("hidden");
   }
+  renderStudentChips();
   alert("Liste des eleves enregistree (" + noms.length + " eleve(s)).");
+}
+
+function renderStudentChips(){
+  var zone = document.getElementById("listeElevesChips");
+  if(!state.currentClass){ zone.innerHTML = ""; return; }
+  var cls = state.db.classes[state.currentClass];
+  if(!cls || cls.students.length === 0){
+    zone.innerHTML = "<p class=\"aide\">Aucun eleve pour le moment.</p>";
+    return;
+  }
+  var html = "";
+  for(var i=0; i<cls.students.length; i++){
+    html += "<span class=\"chip-eleve\">" + escapeHtml(cls.students[i]);
+    html += "<button class=\"chipSup\" data-idx=\"" + i + "\" title=\"Retirer cet eleve\">\u2715</button>";
+    html += "</span>";
+  }
+  zone.innerHTML = html;
+  var btns = zone.querySelectorAll(".chipSup");
+  for(var j=0; j<btns.length; j++){
+    btns[j].addEventListener("click", function(ev){
+      var idx = parseInt(ev.currentTarget.getAttribute("data-idx"), 10);
+      supprimerEleve(idx);
+    });
+  }
+}
+
+function supprimerEleve(idx){
+  var cls = state.db.classes[state.currentClass];
+  var nom = cls.students[idx];
+  var ok = confirm("Retirer " + nom + " de la liste de cette classe ? Ses evaluations deja enregistrees sont conservees.");
+  if(!ok){ return; }
+  cls.students.splice(idx,1);
+  saveDB();
+  document.getElementById("listeElevesInput").value = cls.students.join("\n");
+  renderStudentChips();
+  if(cls.students.length === 0){
+    document.getElementById("carteContinuer").classList.add("hidden");
+  }
+}
+
+function ajouterUnEleve(){
+  var input = document.getElementById("ajoutEleveInput");
+  var nom = input.value.replace(/^\s+|\s+$/g,"");
+  if(nom === "" || !state.currentClass){ return; }
+  var cls = state.db.classes[state.currentClass];
+  cls.students.push(nom);
+  saveDB();
+  input.value = "";
+  document.getElementById("listeElevesInput").value = cls.students.join("\n");
+  renderStudentChips();
+  document.getElementById("carteContinuer").classList.remove("hidden");
 }
 
 function goToEval(){
@@ -627,7 +755,7 @@ function renderScoreInputs(existingRecord){
     }
     html += "<div class=\"score-ligne\">";
     html += "<div class=\"nom\">" + escapeHtml(c.name) + "<small>sur " + c.max + " point(s)</small></div>";
-    html += "<input type=\"number\" inputmode=\"decimal\" class=\"scoreInput\" data-idx=\"" + i + "\" min=\"0\" max=\"" + c.max + "\" step=\"0.5\" value=\"" + valeur + "\">";
+    html += "<input type=\"text\" class=\"scoreInput\" data-idx=\"" + i + "\" placeholder=\"0-" + c.max + " ou ABS\" value=\"" + escapeHtml(valeur) + "\">";
     html += "</div>";
   }
   zone.innerHTML = html;
@@ -644,29 +772,64 @@ function getMaxTotal(){
   return round1(m);
 }
 
+function normalizeScoreValue(raw){
+  var t = (raw + "").replace(/^\s+|\s+$/g,"");
+  if(t === ""){ return ""; }
+  if(t.toUpperCase() === "ABS"){ return "ABS"; }
+  var v = parseFloat(t.replace(",", "."));
+  if(isNaN(v)){ return ""; }
+  return v;
+}
+
 function updateTotal(){
   var inputs = document.querySelectorAll(".scoreInput");
   var total = 0;
+  var maxCounted = 0;
+  var absCount = 0;
+  var hasNumeric = false;
   for(var i=0; i<inputs.length; i++){
-    var v = parseFloat(inputs[i].value);
-    if(!isNaN(v)){ total += v; }
+    var v = normalizeScoreValue(inputs[i].value);
+    var maxCrit = state.currentCriteria[i] ? state.currentCriteria[i].max : 0;
+    if(v === "ABS"){
+      absCount++;
+    }else{
+      hasNumeric = true;
+      if(v !== ""){ total += v; }
+      maxCounted += maxCrit;
+    }
   }
-  total = round1(total);
-  var maxTotal = getMaxTotal();
-  document.getElementById("totalBox").innerHTML = total + " / " + maxTotal + "<span>Total</span>";
+  var box = document.getElementById("totalBox");
+  if(!hasNumeric && absCount > 0){
+    box.innerHTML = "ABS<span>Total</span>";
+  }else{
+    var suffix = absCount > 0 ? (" (" + absCount + " crit. ABS)") : "";
+    box.innerHTML = round1(total) + " / " + round1(maxCounted) + suffix + "<span>Total</span>";
+  }
 }
 
 function collectCurrentScores(){
   var inputs = document.querySelectorAll(".scoreInput");
   var criteria = [];
   var total = 0;
+  var maxCounted = 0;
+  var hasNumeric = false;
   for(var i=0; i<inputs.length; i++){
-    var v = parseFloat(inputs[i].value);
-    if(isNaN(v)){ v = 0; }
-    criteria.push({ name: state.currentCriteria[i].name, max: state.currentCriteria[i].max, score: v });
-    total += v;
+    var v = normalizeScoreValue(inputs[i].value);
+    var maxCrit = state.currentCriteria[i].max;
+    var scoreVal;
+    if(v === "ABS"){
+      scoreVal = "ABS";
+    }else{
+      scoreVal = (v === "") ? 0 : v;
+      hasNumeric = true;
+      total += scoreVal;
+      maxCounted += maxCrit;
+    }
+    criteria.push({ name: state.currentCriteria[i].name, max: maxCrit, score: scoreVal });
   }
-  return { criteria: criteria, total: round1(total), maxTotal: getMaxTotal() };
+  var totalOut = hasNumeric ? round1(total) : "ABS";
+  var maxOut = hasNumeric ? round1(maxCounted) : 0;
+  return { criteria: criteria, total: totalOut, maxTotal: maxOut };
 }
 
 function saveEvaluation(advanceToNext){
@@ -742,17 +905,22 @@ function renderHistorique(){
   }
   var sorted = records.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
   var html = "";
+  var prevPct = null;
   for(var i=0; i<sorted.length; i++){
     var rec = sorted[i];
-    var pct = rec.maxTotal > 0 ? (rec.total / rec.maxTotal) : 0;
+    var isAbs = (rec.total === "ABS");
     var fleche = { symb:"—", cls:"fleche-flat" };
-    if(i > 0){
-      var prevPct = sorted[i-1].maxTotal > 0 ? (sorted[i-1].total / sorted[i-1].maxTotal) : 0;
-      fleche = arrowSymbol(pct - prevPct);
+    var totalTxt = isAbs ? "ABS" : (rec.total + " / " + rec.maxTotal);
+    if(!isAbs){
+      var pct = rec.maxTotal > 0 ? (rec.total / rec.maxTotal) : 0;
+      if(prevPct !== null){
+        fleche = arrowSymbol(pct - prevPct);
+      }
+      prevPct = pct;
     }
     var realIdx = records.indexOf(rec);
     html += "<div class=\"hist-ligne\">";
-    html += "<div>" + formatDate(rec.date) + " — " + rec.total + " / " + rec.maxTotal + "</div>";
+    html += "<div>" + formatDate(rec.date) + " — " + totalTxt + "</div>";
     html += "<div class=\"fleche " + fleche.cls + "\">" + fleche.symb + "</div>";
     html += "<button data-idx=\"" + realIdx + "\" class=\"btnChargerHist\">Modifier</button>";
     html += "</div>";
@@ -810,20 +978,27 @@ function buildStudentPageHTML(studentName){
       html += "<tr><td>" + escapeHtml(cr.name) + "</td><td>" + cr.max + "</td><td>" + cr.score + "</td></tr>";
     }
     html += "</table>";
-    html += "<div class=\"totalPrint\">Total : " + last.total + " / " + last.maxTotal + " (" + formatDate(last.date) + ")</div>";
+    var totalLigne = (last.total === "ABS") ? "Total : ABS" : ("Total : " + last.total + " / " + last.maxTotal);
+    html += "<div class=\"totalPrint\">" + totalLigne + " (" + formatDate(last.date) + ")</div>";
 
     if(sorted.length > 1){
+      html += "<h3>Historique des \u00e9valuations \u2014 " + escapeHtml(COMP_LABELS[code]) + "</h3>";
       html += "<table><tr><th>Date</th><th>Note</th><th>Progression</th></tr>";
+      var prevPctPdf = null;
       for(var s=0; s<sorted.length; s++){
         var r = sorted[s];
-        var pct = r.maxTotal > 0 ? (r.total / r.maxTotal) : 0;
+        var isAbsPdf = (r.total === "ABS");
         var arrowTxt = "—";
-        if(s > 0){
-          var prevPct = sorted[s-1].maxTotal > 0 ? (sorted[s-1].total / sorted[s-1].maxTotal) : 0;
-          var a = arrowSymbol(pct - prevPct);
-          arrowTxt = a.symb;
+        var totalCell = isAbsPdf ? "ABS" : (r.total + " / " + r.maxTotal);
+        if(!isAbsPdf){
+          var pct = r.maxTotal > 0 ? (r.total / r.maxTotal) : 0;
+          if(prevPctPdf !== null){
+            var a = arrowSymbol(pct - prevPctPdf);
+            arrowTxt = a.symb;
+          }
+          prevPctPdf = pct;
         }
-        html += "<tr><td>" + formatDate(r.date) + "</td><td>" + r.total + " / " + r.maxTotal + "</td><td>" + arrowTxt + "</td></tr>";
+        html += "<tr><td>" + formatDate(r.date) + "</td><td>" + totalCell + "</td><td>" + arrowTxt + "</td></tr>";
       }
       html += "</table>";
     }
@@ -866,6 +1041,10 @@ document.addEventListener("DOMContentLoaded", function(){
 
   document.getElementById("btnCreerClasse").addEventListener("click", createClass);
   document.getElementById("btnSauverEleves").addEventListener("click", saveStudentList);
+  document.getElementById("btnAjouterEleve").addEventListener("click", ajouterUnEleve);
+  document.getElementById("ajoutEleveInput").addEventListener("keydown", function(ev){
+    if(ev.key === "Enter"){ ajouterUnEleve(); }
+  });
   document.getElementById("btnAllerEval").addEventListener("click", goToEval);
   document.getElementById("btnChangerClasse").addEventListener("click", changerDeClasse);
 
