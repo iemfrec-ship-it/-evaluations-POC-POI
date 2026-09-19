@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Évaluation Orale</title>
+<style>
+  :root{
+    --bleu:#1d5fa8;
+    --bleu-fonce:#123f73;
+    --vert:#2f9e44;
+    --rouge:#e03131;
+    --gris:#6c757d;
+    --fond:#f4f6f9;
+    --carte:#ffffff;
+    --bordure:#dbe2ea;
+    --texte:#1c2733;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--fond);
+    color:var(--texte);
+    min-height:100vh;
+    min-height:100dvh;
+    padding-bottom:env(safe-area-inset-bottom);
+    -webkit-text-size-adjust:100%;
+  }
+  input, select, textarea, button{
+    font-size:16px;
+    font-family:inherit;
+    -webkit-appearance:none;
+    appearance:none;
+    border-radius:10px;
+  }
+  button{cursor:pointer; touch-action:manipulation;}
+  h1,h2,h3{margin:0 0 10px 0;}
+  .hidden{display:none !important;}
+  .wrap{max-width:900px; margin:0 auto; padding:14px 14px 100px 14px;}
+
+  /* ---- ECRAN CODE ---- */
+  #gate{
+    position:fixed; inset:0; background:var(--bleu-fonce);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:999;
+  }
+  #gate .card{
+    background:var(--carte); border-radius:16px; padding:28px 24px; width:100%; max-width:360px; text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+  #gate input{
+    width:100%; padding:14px; margin:16px 0; border:2px solid var(--bordure); text-align:center;
+    letter-spacing:4px; font-size:22px;
+  }
+  #gate button{
+    width:100%; padding:14px; background:var(--bleu); color:#fff; border:none; font-weight:600; font-size:17px;
+  }
+  #gateError{color:var(--rouge); font-size:14px; min-height:18px; margin-top:6px;}
+
+  /* ---- TOPBAR ---- */
+  #topbar{
+    background:var(--bleu-fonce); color:#fff; padding:12px 14px;
+    padding-top:calc(12px + env(safe-area-inset-top));
+    display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;
+    position:sticky; top:0; z-index:50;
+  }
+  #topbar .titre{font-weight:700; font-size:16px;}
+  #topbar .classeNom{font-weight:400; opacity:.9; font-size:14px;}
+  #topbar button{
+    background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.4);
+    padding:8px 12px; font-size:13px;
+  }
+
+  /* ---- CARTES / SECTIONS ---- */
+  .carte{
+    background:var(--carte); border:1px solid var(--bordure); border-radius:14px;
+    padding:16px; margin-bottom:16px;
+  }
+  .carte h2{font-size:17px; color:var(--bleu-fonce);}
+  label{display:block; font-size:13px; font-weight:600; color:var(--gris); margin:10px 0 4px;}
+  input[type=text], input[type=number], select, textarea{
+    width:100%; padding:12px; border:1.5px solid var(--bordure); background:#fbfcfe;
+  }
+  textarea{min-height:70px; resize:vertical;}
+  .btn{
+    display:inline-block; padding:12px 16px; border:none; font-weight:600; border-radius:10px; font-size:15px;
+  }
+  .btn-bleu{background:var(--bleu); color:#fff;}
+  .btn-vert{background:var(--vert); color:#fff;}
+  .btn-gris{background:#e9ecef; color:#333;}
+  .btn-rouge{background:#fff0f0; color:var(--rouge); border:1px solid #f3c9c9;}
+  .btn-large{width:100%; padding:14px; font-size:16px;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .row > *{flex:1;}
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; background:#eef3fa; border:1px solid #cfe0f2;
+    padding:6px 10px; border-radius:20px; font-size:13px; margin:3px;
+  }
+  .liste-classes{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .classe-btn{
+    padding:10px 14px; border-radius:10px; border:1.5px solid var(--bordure); background:#fbfcfe; font-size:14px;
+  }
+  .classe-btn.actif{background:var(--bleu); color:#fff; border-color:var(--bleu);}
+
+  .critere-ligne{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+  .critere-ligne input[type=text]{flex:3;}
+  .critere-ligne input[type=number]{flex:1;}
+  .critere-ligne .sup{
+    background:#fff0f0; color:var(--rouge); border:none; width:38px; height:38px; font-size:16px; flex:none;
+  }
+
+  .score-ligne{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    border-bottom:1px dashed var(--bordure); padding:10px 0;
+  }
+  .score-ligne .nom{font-size:15px; flex:1;}
+  .score-ligne .nom small{display:block; color:var(--gris); font-size:12px;}
+  .score-ligne input{width:80px; text-align:center; flex:none;}
+
+  .total-box{
+    background:var(--bleu); color:#fff; border-radius:12px; padding:14px; text-align:center;
+    font-size:22px; font-weight:700; margin:14px 0;
+  }
+  .total-box span{font-size:14px; font-weight:400; display:block; opacity:.85;}
+
+  .hist-ligne{
+    display:flex; justify-content:space-between; align-items:center; padding:8px 10px;
+    background:#f7f9fc; border-radius:8px; margin-bottom:6px; font-size:14px;
+  }
+  .hist-ligne .fleche{font-size:18px; width:28px; text-align:center;}
+  .fleche-up{color:var(--vert);}
+  .fleche-down{color:var(--rouge);}
+  .fleche-flat{color:var(--gris);}
+  .hist-ligne button{background:none; border:none; color:var(--bleu); font-size:13px; text-decoration:underline; padding:2px;}
+
+  select.eleve-select, select.competence-select{font-weight:600;}
+
+  /* ---- FAB ---- */
+  #fab{
+    position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom));
+    z-index:200;
+  }
+  #fabBtn{
+    background:var(--bleu-fonce); color:#fff; border:none; border-radius:50px;
+    padding:16px 20px; font-size:15px; font-weight:700; box-shadow:0 6px 18px rgba(0,0,0,.3);
+  }
+  #fabMenu{
+    position:absolute; bottom:64px; right:0; background:#fff; border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.25); padding:8px; width:240px; display:none;
+  }
+  #fabMenu.open{display:block;}
+  #fabMenu button{
+    display:block; width:100%; text-align:left; padding:12px; background:none; border:none;
+    font-size:14px; border-radius:8px;
+  }
+  #fabMenu button:active{background:#eef3fa;}
+
+  .aide{font-size:12px; color:var(--gris); margin-top:4px;}
+  .separateur{border:none; border-top:1px solid var(--bordure); margin:16px 0;}
+
+  /* ---- IMPRESSION ---- */
+  #printArea{display:none;}
+  @media print{
+    body > *:not(#printArea){display:none !important;}
+    #printArea{display:block !important;}
+    .page{page-break-after:always; padding:20px; font-family:Arial,sans-serif;}
+    .page:last-child{page-break-after:auto;}
+    .page h1{font-size:20px; border-bottom:2px solid #333; padding-bottom:6px;}
+    .page h2{font-size:15px; color:#1d5fa8; margin-top:18px;}
+    .page table{width:100%; border-collapse:collapse; font-size:13px; margin:8px 0;}
+    .page table td, .page table th{border:1px solid #999; padding:5px 8px; text-align:left;}
+    .page .bloc{margin-bottom:6px; font-size:13px;}
+    .page .bloc b{display:block; font-size:12px; color:#555; margin-bottom:2px;}
+    .page .totalPrint{font-weight:bold; font-size:15px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ECRAN CODE D'ACCES -->
+<div id="gate">
+  <div class="card">
+    <h2>Évaluation Orale</h2>
+    <p style="color:#555; font-size:14px;">Accès professeur</p>
+    <input type="password" inputmode="numeric" id="gateInput" placeholder="Code d'accès" maxlength="10">
+    <div id="gateError"></div>
+    <button id="gateBtn">Entrer</button>
+  </div>
+</div>
+
+<!-- APPLICATION -->
+<div id="app" class="hidden">
+  <div id="topbar">
+    <div>
+      <div class="titre">Évaluation Orale</div>
+      <div class="classeNom" id="topClasseNom">Aucune classe sélectionnée</div>
+    </div>
+    <button id="btnChangerClasse">Changer de classe</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- VUE CONFIGURATION CLASSE -->
+    <div id="view-setup">
+      <div class="carte">
+        <h2>1. Choisir ou créer une classe</h2>
+        <div class="liste-classes" id="listeClasses"></div>
+        <div class="row" style="margin-top:12px;">
+          <input type="text" id="nouvelleClasseInput" placeholder="Nom de la nouvelle classe (ex: 1MOS)">
+          <button class="btn btn-bleu" id="btnCreerClasse" style="flex:none;">Créer</button>
+        </div>
+      </div>
+
+      <div class="carte hidden" id="carteEleves">
+        <h2>2. Liste des élèves</h2>
+        <p class="aide">Un nom par ligne. Cette liste est enregistrée pour cette classe et réutilisée à chaque évaluation.</p>
+        <textarea id="listeElevesInput" placeholder="Nom Prénom
+Nom Prénom
+..."></textarea>
+        <button class="btn btn-bleu btn-large" id="btnSauverEleves" style="margin-top:10px;">Enregistrer la liste</button>
+      </div>
+
+      <div class="carte hidden" id="carteContinuer">
+        <button class="btn btn-vert btn-large" id="btnAllerEval">Continuer vers l'évaluation →</button>
+      </div>
+    </div>
+
+    <!-- VUE EVALUATION -->
+    <div id="view-eval" class="hidden">
+
+      <div class="carte">
+        <h2>Compétence évaluée</h2>
+        <select id="competenceSelect" class="competence-select">
+          <option value="POC">Production orale en continu</option>
+          <option value="POI">Production orale en interaction</option>
+        </select>
+      </div>
+
+      <div class="carte">
+        <h2>Barème (critères et points)</h2>
+        <div id="criteresEditeur"></div>
+        <button class="btn btn-gris" id="btnAjouterCritere">+ Ajouter un critère</button>
+        <hr class="separateur">
+        <button class="btn btn-bleu btn-large" id="btnValiderBareme">Valider le barème pour cette compétence</button>
+        <p class="aide">Le barème est mémorisé pour cette classe et cette compétence ; vous pouvez le modifier à tout moment (les évaluations déjà enregistrées ne changent pas).</p>
+      </div>
+
+      <div class="carte hidden" id="carteEvalEleve">
+        <h2>Élève évalué</h2>
+        <select id="eleveSelect" class="eleve-select"></select>
+
+        <div id="scoresZone" style="margin-top:14px;"></div>
+
+        <div class="total-box" id="totalBox">0 / 0<span>Total</span></div>
+
+        <label>Appréciation générale</label>
+        <textarea id="appreciationInput" placeholder="Appréciation générale de la prestation..."></textarea>
+
+        <label>Conseils</label>
+        <textarea id="conseilsInput" placeholder="Conseils donnés à l'élève..."></textarea>
+
+        <label>Recommandations de travail</label>
+        <textarea id="recommandationsInput" placeholder="Pistes de travail pour progresser..."></textarea>
+
+        <div class="row" style="margin-top:14px;">
+          <button class="btn btn-vert" id="btnEnregistrerEval">Enregistrer l'évaluation</button>
+          <button class="btn btn-gris hidden" id="btnAnnulerEdition" style="flex:none;">Annuler la modification</button>
+        </div>
+        <button class="btn btn-bleu btn-large" id="btnEleveSuivant" style="margin-top:10px;">Enregistrer et passer à l'élève suivant →</button>
+
+        <hr class="separateur">
+        <h2>Progression — historique de cette compétence</h2>
+        <div id="historiqueZone"><p class="aide">Aucune évaluation enregistrée pour l'instant.</p></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- BOUTON FLOTTANT PDF -->
+<div id="fab" class="hidden">
+  <div id="fabMenu">
+    <button id="fabPdfEleve">📄 PDF de l'élève sélectionné</button>
+    <button id="fabPdfClasse">🖨 PDF classe complète (1 page / élève)</button>
+  </div>
+  <button id="fabBtn">📄 PDF</button>
+</div>
+
+<!-- ZONE D'IMPRESSION (invisible à l'écran) -->
+<div id="printArea"></div>
+
+<script>
+var ACCESS_CODE = "0504";
+var STORAGE_KEY = "oralEvalDB_v1";
+
+var TXT = {
+  eleve: "\u00c9l\u00e8ve",
+  Eleve: "\u00c9l\u00e8ve",
+  eleves: "\u00e9l\u00e8ves",
+  evaluation: "\u00e9valuation",
+  Evaluation: "\u00c9valuation",
+  evaluations: "\u00e9valuations",
+  competence: "comp\u00e9tence",
+  Competence: "Comp\u00e9tence",
+  critere: "crit\u00e8re",
+  criteres: "crit\u00e8res",
+  bareme: "bar\u00e8me",
+  Bareme: "Bar\u00e8me",
+  appreciation: "appr\u00e9ciation",
+  Appreciation: "Appr\u00e9ciation",
+  generale: "g\u00e9n\u00e9rale",
+  Generale: "G\u00e9n\u00e9rale",
+  precedente: "pr\u00e9c\u00e9dente",
+  nonEvalue: "Non \u00e9valu\u00e9(e) pour cette comp\u00e9tence",
+  arrowUp: "\u25B2",
+  arrowDown: "\u25BC",
+  arrowFlat: "\u25B6",
+  Genere: "G\u00e9n\u00e9r\u00e9",
+  classeCompl: "Classe compl\u00e8te"
+};
+
+var COMP_LABELS = {
+  POC: "Production orale en continu",
+  POI: "Production orale en interaction"
+};
+
+var state = {
+  db: null,
+  currentClass: null,
+  currentCompetence: "POC",
+  currentCriteria: [],
+  currentStudent: null,
+  editingRecordIndex: null
+};
+
+/* ---------- STOCKAGE ---------- */
+function loadDB(){
+  var raw = null;
+  try{
+    raw = window.localStorage.getItem(STORAGE_KEY);
+  }catch(e){
+    raw = null;
+  }
+  if(raw){
+    try{
+      return JSON.parse(raw);
+    }catch(e2){
+      return { classes:{} };
+    }
+  }
+  return { classes:{} };
+}
+
+function saveDB(){
+  try{
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.db));
+    return true;
+  }catch(e){
+    alert("Attention : l'enregistrement local a echoue (stockage plein ou navigation privee). Verifiez les reglages Safari.");
+    return false;
+  }
+}
+
+function ensureClass(name){
+  if(!state.db.classes[name]){
+    state.db.classes[name] = {
+      students: [],
+      evaluations: {},
+      templates: {}
+    };
+  }
+  return state.db.classes[name];
+}
+
+/* ---------- UTILITAIRES ---------- */
+function escapeHtml(str){
+  if(str === null || str === undefined){ return ""; }
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+
+function nl2br(str){
+  return escapeHtml(str).replace(/\n/g,"<br>");
+}
+
+function formatDate(iso){
+  var d = new Date(iso);
+  var jj = ("0" + d.getDate()).slice(-2);
+  var mm = ("0" + (d.getMonth()+1)).slice(-2);
+  var aaaa = d.getFullYear();
+  var hh = ("0" + d.getHours()).slice(-2);
+  var mn = ("0" + d.getMinutes()).slice(-2);
+  return jj + "/" + mm + "/" + aaaa + " " + hh + ":" + mn;
+}
+
+function round1(n){
+  return Math.round(n * 10) / 10;
+}
+
+function arrowSymbol(delta){
+  if(delta > 0.001){ return { symb: TXT.arrowUp, cls:"fleche-up" }; }
+  if(delta < -0.001){ return { symb: TXT.arrowDown, cls:"fleche-down" }; }
+  return { symb: TXT.arrowFlat, cls:"fleche-flat" };
+}
+
+/* ---------- ECRAN CODE ---------- */
+function checkAuth(){
+  var code = document.getElementById("gateInput").value;
+  if(code === ACCESS_CODE){
+    document.getElementById("gate").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    startApp();
+  }else{
+    document.getElementById("gateError").textContent = "Code incorrect.";
+  }
+}
+
+/* ---------- DEMARRAGE ---------- */
+function startApp(){
+  state.db = loadDB();
+  renderClassList();
+  if(state.currentClass){
+    selectClass(state.currentClass);
+  }
+}
+
+/* ---------- GESTION CLASSES ---------- */
+function renderClassList(){
+  var zone = document.getElementById("listeClasses");
+  var names = [];
+  for(var k in state.db.classes){ if(state.db.classes.hasOwnProperty(k)){ names.push(k); } }
+  names.sort();
+  if(names.length === 0){
+    zone.innerHTML = "<p class=\"aide\">Aucune classe enregistree pour le moment.</p>";
+    return;
+  }
+  var html = "";
+  for(var i=0; i<names.length; i++){
+    var nom = names[i];
+    var actif = (nom === state.currentClass) ? " actif" : "";
+    html += "<button class=\"classe-btn" + actif + "\" data-classe=\"" + escapeHtml(nom) + "\">" + escapeHtml(nom) + "</button>";
+  }
+  zone.innerHTML = html;
+  var btns = zone.querySelectorAll(".classe-btn");
+  for(var j=0; j<btns.length; j++){
+    btns[j].addEventListener("click", function(ev){
+      selectClass(ev.currentTarget.getAttribute("data-classe"));
+    });
+  }
+}
+
+function createClass(){
+  var input = document.getElementById("nouvelleClasseInput");
+  var nom = input.value.replace(/^\s+|\s+$/g,"");
+  if(nom === ""){ return; }
+  ensureClass(nom);
+  saveDB();
+  input.value = "";
+  renderClassList();
+  selectClass(nom);
+}
+
+function selectClass(nom){
+  state.currentClass = nom;
+  ensureClass(nom);
+  document.getElementById("topClasseNom").textContent = nom;
+  document.getElementById("carteEleves").classList.remove("hidden");
+  var cls = state.db.classes[nom];
+  document.getElementById("listeElevesInput").value = cls.students.join("\n");
+  if(cls.students.length > 0){
+    document.getElementById("carteContinuer").classList.remove("hidden");
+  }else{
+    document.getElementById("carteContinuer").classList.add("hidden");
+  }
+  document.getElementById("fab").classList.remove("hidden");
+  renderClassList();
+  document.getElementById("view-eval").classList.add("hidden");
+  document.getElementById("view-setup").classList.remove("hidden");
+}
+
+function saveStudentList(){
+  if(!state.currentClass){ return; }
+  var raw = document.getElementById("listeElevesInput").value;
+  var lignes = raw.split("\n");
+  var noms = [];
+  for(var i=0; i<lignes.length; i++){
+    var n = lignes[i].replace(/^\s+|\s+$/g,"");
+    if(n !== ""){ noms.push(n); }
+  }
+  state.db.classes[state.currentClass].students = noms;
+  saveDB();
+  document.getElementById("listeElevesInput").value = noms.join("\n");
+  if(noms.length > 0){
+    document.getElementById("carteContinuer").classList.remove("hidden");
+  }
+  alert("Liste des eleves enregistree (" + noms.length + " eleve(s)).");
+}
+
+function goToEval(){
+  document.getElementById("view-setup").classList.add("hidden");
+  document.getElementById("view-eval").classList.remove("hidden");
+  onCompetenceChange();
+}
+
+function changerDeClasse(){
+  document.getElementById("view-eval").classList.add("hidden");
+  document.getElementById("view-setup").classList.remove("hidden");
+}
+
+/* ---------- BAREME / CRITERES ---------- */
+function onCompetenceChange(){
+  state.currentCompetence = document.getElementById("competenceSelect").value;
+  var cls = state.db.classes[state.currentClass];
+  var template = cls.templates[state.currentCompetence];
+  if(template && template.length > 0){
+    state.currentCriteria = JSON.parse(JSON.stringify(template));
+  }else{
+    state.currentCriteria = [
+      { name:"", max:5 }
+    ];
+  }
+  renderCriteriaEditor();
+  document.getElementById("carteEvalEleve").classList.add("hidden");
+}
+
+function renderCriteriaEditor(){
+  var zone = document.getElementById("criteresEditeur");
+  var html = "";
+  for(var i=0; i<state.currentCriteria.length; i++){
+    var c = state.currentCriteria[i];
+    html += "<div class=\"critere-ligne\">";
+    html += "<input type=\"text\" data-idx=\"" + i + "\" class=\"critNom\" placeholder=\"Nom du critere\" value=\"" + escapeHtml(c.name) + "\">";
+    html += "<input type=\"number\" data-idx=\"" + i + "\" class=\"critMax\" min=\"0\" step=\"0.5\" placeholder=\"Points\" value=\"" + c.max + "\">";
+    html += "<button class=\"sup\" data-idx=\"" + i + "\">✕</button>";
+    html += "</div>";
+  }
+  zone.innerHTML = html;
+
+  var nomInputs = zone.querySelectorAll(".critNom");
+  for(var a=0; a<nomInputs.length; a++){
+    nomInputs[a].addEventListener("input", function(ev){
+      var idx = parseInt(ev.currentTarget.getAttribute("data-idx"), 10);
+      state.currentCriteria[idx].name = ev.currentTarget.value;
+    });
+  }
+  var maxInputs = zone.querySelectorAll(".critMax");
+  for(var b=0; b<maxInputs.length; b++){
+    maxInputs[b].addEventListener("input", function(ev){
+      var idx = parseInt(ev.currentTarget.getAttribute("data-idx"), 10);
+      var v = parseFloat(ev.currentTarget.value);
+      state.currentCriteria[idx].max = isNaN(v) ? 0 : v;
+    });
+  }
+  var supBtns = zone.querySelectorAll(".sup");
+  for(var s=0; s<supBtns.length; s++){
+    supBtns[s].addEventListener("click", function(ev){
+      var idx = parseInt(ev.currentTarget.getAttribute("data-idx"), 10);
+      state.currentCriteria.splice(idx,1);
+      renderCriteriaEditor();
+    });
+  }
+}
+
+function addCriterionRow(){
+  state.currentCriteria.push({ name:"", max:5 });
+  renderCriteriaEditor();
+}
+
+function validateBareme(){
+  var valides = [];
+  for(var i=0; i<state.currentCriteria.length; i++){
+    var c = state.currentCriteria[i];
+    if(c.name.replace(/^\s+|\s+$/g,"") !== ""){
+      valides.push({ name:c.name, max: c.max || 0 });
+    }
+  }
+  if(valides.length === 0){
+    alert("Ajoutez au moins un critere nomme avant de valider.");
+    return;
+  }
+  state.currentCriteria = valides;
+  state.db.classes[state.currentClass].templates[state.currentCompetence] = JSON.parse(JSON.stringify(valides));
+  saveDB();
+  renderCriteriaEditor();
+  renderStudentSelector();
+  document.getElementById("carteEvalEleve").classList.remove("hidden");
+}
+
+/* ---------- SELECTION ELEVE ET SAISIE ---------- */
+function renderStudentSelector(){
+  var sel = document.getElementById("eleveSelect");
+  var cls = state.db.classes[state.currentClass];
+  var html = "";
+  for(var i=0; i<cls.students.length; i++){
+    html += "<option value=\"" + escapeHtml(cls.students[i]) + "\">" + escapeHtml(cls.students[i]) + "</option>";
+  }
+  sel.innerHTML = html;
+  if(cls.students.length > 0){
+    state.currentStudent = cls.students[0];
+    sel.value = state.currentStudent;
+  }
+  onStudentChange();
+}
+
+function onStudentChange(){
+  state.currentStudent = document.getElementById("eleveSelect").value;
+  state.editingRecordIndex = null;
+  document.getElementById("btnAnnulerEdition").classList.add("hidden");
+  renderScoreInputs(null);
+  document.getElementById("appreciationInput").value = "";
+  document.getElementById("conseilsInput").value = "";
+  document.getElementById("recommandationsInput").value = "";
+  renderHistorique();
+}
+
+function renderScoreInputs(existingRecord){
+  var zone = document.getElementById("scoresZone");
+  var html = "";
+  for(var i=0; i<state.currentCriteria.length; i++){
+    var c = state.currentCriteria[i];
+    var valeur = "";
+    if(existingRecord && existingRecord.criteria && existingRecord.criteria[i]){
+      valeur = existingRecord.criteria[i].score;
+    }
+    html += "<div class=\"score-ligne\">";
+    html += "<div class=\"nom\">" + escapeHtml(c.name) + "<small>sur " + c.max + " point(s)</small></div>";
+    html += "<input type=\"number\" inputmode=\"decimal\" class=\"scoreInput\" data-idx=\"" + i + "\" min=\"0\" max=\"" + c.max + "\" step=\"0.5\" value=\"" + valeur + "\">";
+    html += "</div>";
+  }
+  zone.innerHTML = html;
+  var inputs = zone.querySelectorAll(".scoreInput");
+  for(var j=0; j<inputs.length; j++){
+    inputs[j].addEventListener("input", updateTotal);
+  }
+  updateTotal();
+}
+
+function getMaxTotal(){
+  var m = 0;
+  for(var i=0; i<state.currentCriteria.length; i++){ m += (state.currentCriteria[i].max || 0); }
+  return round1(m);
+}
+
+function updateTotal(){
+  var inputs = document.querySelectorAll(".scoreInput");
+  var total = 0;
+  for(var i=0; i<inputs.length; i++){
+    var v = parseFloat(inputs[i].value);
+    if(!isNaN(v)){ total += v; }
+  }
+  total = round1(total);
+  var maxTotal = getMaxTotal();
+  document.getElementById("totalBox").innerHTML = total + " / " + maxTotal + "<span>Total</span>";
+}
+
+function collectCurrentScores(){
+  var inputs = document.querySelectorAll(".scoreInput");
+  var criteria = [];
+  var total = 0;
+  for(var i=0; i<inputs.length; i++){
+    var v = parseFloat(inputs[i].value);
+    if(isNaN(v)){ v = 0; }
+    criteria.push({ name: state.currentCriteria[i].name, max: state.currentCriteria[i].max, score: v });
+    total += v;
+  }
+  return { criteria: criteria, total: round1(total), maxTotal: getMaxTotal() };
+}
+
+function saveEvaluation(advanceToNext){
+  if(!state.currentStudent){ alert("Selectionnez un eleve."); return; }
+  var cls = state.db.classes[state.currentClass];
+  if(!cls.evaluations[state.currentStudent]){ cls.evaluations[state.currentStudent] = {}; }
+  if(!cls.evaluations[state.currentStudent][state.currentCompetence]){ cls.evaluations[state.currentStudent][state.currentCompetence] = []; }
+
+  var data = collectCurrentScores();
+  var record = {
+    date: new Date().toISOString(),
+    criteria: data.criteria,
+    total: data.total,
+    maxTotal: data.maxTotal,
+    appreciation: document.getElementById("appreciationInput").value,
+    conseils: document.getElementById("conseilsInput").value,
+    recommandations: document.getElementById("recommandationsInput").value
+  };
+
+  var arr = cls.evaluations[state.currentStudent][state.currentCompetence];
+  if(state.editingRecordIndex !== null){
+    record.date = arr[state.editingRecordIndex].date;
+    arr[state.editingRecordIndex] = record;
+  }else{
+    arr.push(record);
+  }
+  saveDB();
+  state.editingRecordIndex = null;
+  document.getElementById("btnAnnulerEdition").classList.add("hidden");
+  renderHistorique();
+
+  if(advanceToNext){
+    goToNextStudent();
+  }else{
+    alert("Evaluation enregistree pour " + state.currentStudent + ".");
+  }
+}
+
+function goToNextStudent(){
+  var sel = document.getElementById("eleveSelect");
+  var idx = sel.selectedIndex;
+  if(idx < sel.options.length - 1){
+    sel.selectedIndex = idx + 1;
+    onStudentChange();
+  }else{
+    alert("C'etait le dernier eleve de la liste.");
+    onStudentChange();
+  }
+}
+
+function cancelEdition(){
+  state.editingRecordIndex = null;
+  document.getElementById("btnAnnulerEdition").classList.add("hidden");
+  renderScoreInputs(null);
+  document.getElementById("appreciationInput").value = "";
+  document.getElementById("conseilsInput").value = "";
+  document.getElementById("recommandationsInput").value = "";
+}
+
+/* ---------- HISTORIQUE / PROGRESSION ---------- */
+function getRecords(studentName, competence){
+  var cls = state.db.classes[state.currentClass];
+  if(!cls || !cls.evaluations[studentName] || !cls.evaluations[studentName][competence]){ return []; }
+  return cls.evaluations[studentName][competence];
+}
+
+function renderHistorique(){
+  var zone = document.getElementById("historiqueZone");
+  var records = getRecords(state.currentStudent, state.currentCompetence);
+  if(records.length === 0){
+    zone.innerHTML = "<p class=\"aide\">Aucune evaluation enregistree pour l'instant sur cette competence.</p>";
+    return;
+  }
+  var sorted = records.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
+  var html = "";
+  for(var i=0; i<sorted.length; i++){
+    var rec = sorted[i];
+    var pct = rec.maxTotal > 0 ? (rec.total / rec.maxTotal) : 0;
+    var fleche = { symb:"—", cls:"fleche-flat" };
+    if(i > 0){
+      var prevPct = sorted[i-1].maxTotal > 0 ? (sorted[i-1].total / sorted[i-1].maxTotal) : 0;
+      fleche = arrowSymbol(pct - prevPct);
+    }
+    var realIdx = records.indexOf(rec);
+    html += "<div class=\"hist-ligne\">";
+    html += "<div>" + formatDate(rec.date) + " — " + rec.total + " / " + rec.maxTotal + "</div>";
+    html += "<div class=\"fleche " + fleche.cls + "\">" + fleche.symb + "</div>";
+    html += "<button data-idx=\"" + realIdx + "\" class=\"btnChargerHist\">Modifier</button>";
+    html += "</div>";
+  }
+  zone.innerHTML = html;
+  var btns = zone.querySelectorAll(".btnChargerHist");
+  for(var j=0; j<btns.length; j++){
+    btns[j].addEventListener("click", function(ev){
+      var idx = parseInt(ev.currentTarget.getAttribute("data-idx"), 10);
+      loadRecordForEditing(idx);
+    });
+  }
+}
+
+function loadRecordForEditing(idx){
+  var records = getRecords(state.currentStudent, state.currentCompetence);
+  var rec = records[idx];
+  if(!rec){ return; }
+  state.editingRecordIndex = idx;
+  document.getElementById("btnAnnulerEdition").classList.remove("hidden");
+  renderScoreInputs(rec);
+  document.getElementById("appreciationInput").value = rec.appreciation || "";
+  document.getElementById("conseilsInput").value = rec.conseils || "";
+  document.getElementById("recommandationsInput").value = rec.recommandations || "";
+  window.scrollTo(0,0);
+}
+
+/* ---------- PDF / IMPRESSION ---------- */
+function toggleFabMenu(){
+  document.getElementById("fabMenu").classList.toggle("open");
+}
+
+function buildStudentPageHTML(studentName){
+  var cls = state.db.classes[state.currentClass];
+  var html = "<div class=\"page\">";
+  html += "<h1>" + escapeHtml(studentName) + "</h1>";
+  html += "<div class=\"bloc\"><b>Classe</b>" + escapeHtml(state.currentClass) + "</div>";
+  html += "<div class=\"bloc\"><b>" + TXT.Genere + "</b>" + formatDate(new Date().toISOString()) + "</div>";
+
+  var comps = ["POC","POI"];
+  for(var c=0; c<comps.length; c++){
+    var code = comps[c];
+    var records = getRecords(studentName, code);
+    html += "<h2>" + escapeHtml(COMP_LABELS[code]) + "</h2>";
+    if(records.length === 0){
+      html += "<div class=\"bloc\">" + TXT.nonEvalue + "</div>";
+      continue;
+    }
+    var sorted = records.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
+    var last = sorted[sorted.length - 1];
+
+    html += "<table><tr><th>Critere</th><th>Points</th><th>Note</th></tr>";
+    for(var k=0; k<last.criteria.length; k++){
+      var cr = last.criteria[k];
+      html += "<tr><td>" + escapeHtml(cr.name) + "</td><td>" + cr.max + "</td><td>" + cr.score + "</td></tr>";
+    }
+    html += "</table>";
+    html += "<div class=\"totalPrint\">Total : " + last.total + " / " + last.maxTotal + " (" + formatDate(last.date) + ")</div>";
+
+    if(sorted.length > 1){
+      html += "<table><tr><th>Date</th><th>Note</th><th>Progression</th></tr>";
+      for(var s=0; s<sorted.length; s++){
+        var r = sorted[s];
+        var pct = r.maxTotal > 0 ? (r.total / r.maxTotal) : 0;
+        var arrowTxt = "—";
+        if(s > 0){
+          var prevPct = sorted[s-1].maxTotal > 0 ? (sorted[s-1].total / sorted[s-1].maxTotal) : 0;
+          var a = arrowSymbol(pct - prevPct);
+          arrowTxt = a.symb;
+        }
+        html += "<tr><td>" + formatDate(r.date) + "</td><td>" + r.total + " / " + r.maxTotal + "</td><td>" + arrowTxt + "</td></tr>";
+      }
+      html += "</table>";
+    }
+
+    html += "<div class=\"bloc\"><b>" + TXT.Appreciation + " " + TXT.generale + "</b>" + nl2br(last.appreciation) + "</div>";
+    html += "<div class=\"bloc\"><b>Conseils</b>" + nl2br(last.conseils) + "</div>";
+    html += "<div class=\"bloc\"><b>Recommandations de travail</b>" + nl2br(last.recommandations) + "</div>";
+  }
+
+  html += "</div>";
+  return html;
+}
+
+function printSingleStudent(){
+  if(!state.currentStudent){ alert("Selectionnez d'abord un eleve."); return; }
+  var content = buildStudentPageHTML(state.currentStudent);
+  document.getElementById("printArea").innerHTML = content;
+  document.getElementById("fabMenu").classList.remove("open");
+  setTimeout(function(){ window.print(); }, 50);
+}
+
+function printAllStudents(){
+  var cls = state.db.classes[state.currentClass];
+  if(!cls || cls.students.length === 0){ alert("Aucun eleve dans cette classe."); return; }
+  var html = "";
+  for(var i=0; i<cls.students.length; i++){
+    html += buildStudentPageHTML(cls.students[i]);
+  }
+  document.getElementById("printArea").innerHTML = html;
+  document.getElementById("fabMenu").classList.remove("open");
+  setTimeout(function(){ window.print(); }, 50);
+}
+
+/* ---------- INITIALISATION ---------- */
+document.addEventListener("DOMContentLoaded", function(){
+  document.getElementById("gateBtn").addEventListener("click", checkAuth);
+  document.getElementById("gateInput").addEventListener("keydown", function(ev){
+    if(ev.key === "Enter"){ checkAuth(); }
+  });
+
+  document.getElementById("btnCreerClasse").addEventListener("click", createClass);
+  document.getElementById("btnSauverEleves").addEventListener("click", saveStudentList);
+  document.getElementById("btnAllerEval").addEventListener("click", goToEval);
+  document.getElementById("btnChangerClasse").addEventListener("click", changerDeClasse);
+
+  document.getElementById("competenceSelect").addEventListener("change", onCompetenceChange);
+  document.getElementById("btnAjouterCritere").addEventListener("click", addCriterionRow);
+  document.getElementById("btnValiderBareme").addEventListener("click", validateBareme);
+
+  document.getElementById("eleveSelect").addEventListener("change", onStudentChange);
+  document.getElementById("btnEnregistrerEval").addEventListener("click", function(){ saveEvaluation(false); });
+  document.getElementById("btnEleveSuivant").addEventListener("click", function(){ saveEvaluation(true); });
+  document.getElementById("btnAnnulerEdition").addEventListener("click", cancelEdition);
+
+  document.getElementById("fabBtn").addEventListener("click", toggleFabMenu);
+  document.getElementById("fabPdfEleve").addEventListener("click", printSingleStudent);
+  document.getElementById("fabPdfClasse").addEventListener("click", printAllStudents);
+});
+</script>
+</body>
+</html>
