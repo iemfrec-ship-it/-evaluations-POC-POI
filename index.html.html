@@ -251,20 +251,25 @@
       </div>
 
       <div class="carte hidden" id="carteEleves">
-        <h2>2. Liste des élèves</h2>
-        <p class="aide">Un nom par ligne (collage rapide en début d'année). Cette liste est enregistrée pour cette classe et réutilisée à chaque évaluation.</p>
-        <textarea id="listeElevesInput" placeholder="Nom Prénom
+        <div class="row" style="align-items:center; justify-content:space-between; flex-wrap:nowrap;">
+          <h2 style="margin:0;">2. Liste des élèves</h2>
+          <button class="btn btn-gris" id="btnToggleEleves" style="flex:none;">👥 Élèves (<span id="nbElevesBtn">0</span>)</button>
+        </div>
+        <div id="elevesDetail" class="hidden">
+          <p class="aide">Un nom par ligne (collage rapide en début d'année). Cette liste est enregistrée pour cette classe et réutilisée à chaque évaluation.</p>
+          <textarea id="listeElevesInput" placeholder="Nom Prénom
 Nom Prénom
 ..."></textarea>
-        <button class="btn btn-bleu btn-large" id="btnSauverEleves" style="margin-top:10px;">Enregistrer la liste</button>
+          <button class="btn btn-bleu btn-large" id="btnSauverEleves" style="margin-top:10px;">Enregistrer la liste</button>
 
-        <hr class="separateur">
-        <label>Ajouter un élève</label>
-        <div class="row">
-          <input type="text" id="ajoutEleveInput" placeholder="Nom du nouvel élève">
-          <button class="btn btn-bleu" id="btnAjouterEleve" style="flex:none;">Ajouter</button>
+          <hr class="separateur">
+          <label>Ajouter un élève</label>
+          <div class="row">
+            <input type="text" id="ajoutEleveInput" placeholder="Nom du nouvel élève">
+            <button class="btn btn-bleu" id="btnAjouterEleve" style="flex:none;">Ajouter</button>
+          </div>
+          <div id="listeElevesChips" style="margin-top:10px;"></div>
         </div>
-        <div id="listeElevesChips" style="margin-top:10px;"></div>
       </div>
 
       <div class="carte hidden" id="carteSessions">
@@ -274,8 +279,6 @@ Nom Prénom
         <h3 class="souscarte">Nouvelle évaluation</h3>
         <label>Titre de l'évaluation</label>
         <input type="text" id="nouvelleSessionTitre" placeholder="Ex : Oral n°1 - Semestre 1">
-        <label>Date</label>
-        <input type="date" id="nouvelleSessionDate">
         <label>Compétence</label>
         <select id="nouvelleSessionCompetence">
           <option value="POC">Production orale en continu</option>
@@ -291,8 +294,6 @@ Nom Prénom
       <div class="carte">
         <label>Titre de l'évaluation</label>
         <input type="text" id="evalSessionTitre" placeholder="Titre de l'évaluation">
-        <label>Date</label>
-        <input type="date" id="evalSessionDate">
         <label>Compétence</label>
         <div><span class="chip-competence" id="evalSessionCompetenceLabel">—</span></div>
       </div>
@@ -313,6 +314,9 @@ Nom Prénom
           <button class="btn btn-gris" id="btnElevesPanel" style="flex:none;">👥 Élèves</button>
         </div>
         <div id="panelEleves" class="panel-eleves hidden"></div>
+
+        <label>Date de passage de cet élève</label>
+        <input type="date" id="evalStudentDate">
 
         <div id="scoresZone" style="margin-top:14px;"></div>
         <p class="aide">Saisissez une note pour chaque critère, ou tapez ABS si l'élève était absent sur ce critère.</p>
@@ -470,9 +474,11 @@ function migrateClass(cls){
             date: rec.date ? rec.date.substring(0,10) : todayISO(),
             competence: comp,
             criteria: bareme,
+            createdAt: rec.date || new Date().toISOString(),
             records: {}
           };
           sess.records[student] = {
+            date: rec.date ? rec.date.substring(0,10) : todayISO(),
             criteria: rec.criteria,
             total: rec.total,
             maxTotal: rec.maxTotal,
@@ -487,6 +493,15 @@ function migrateClass(cls){
       }
     }
     delete cls.evaluations;
+  }
+  for(var si=0; si<cls.sessions.length; si++){
+    var s = cls.sessions[si];
+    if(!s.createdAt){ s.createdAt = (s.date ? s.date : todayISO()) + "T00:00:00.000Z"; }
+    for(var stName in s.records){
+      if(s.records.hasOwnProperty(stName) && !s.records[stName].date){
+        s.records[stName].date = s.date || todayISO();
+      }
+    }
   }
 }
 
@@ -650,13 +665,27 @@ function selectClass(nom){
   var cls = state.db.classes[nom];
   document.getElementById("listeElevesInput").value = cls.students.join("\n");
   document.getElementById("fab").classList.remove("hidden");
-  document.getElementById("nouvelleSessionDate").value = todayISO();
   document.getElementById("nouvelleSessionTitre").value = "";
+  if(cls.students.length > 0){
+    document.getElementById("elevesDetail").classList.add("hidden");
+  }else{
+    document.getElementById("elevesDetail").classList.remove("hidden");
+  }
   renderClassList();
   renderStudentChips();
   renderSessionsList();
   document.getElementById("view-eval").classList.add("hidden");
   document.getElementById("view-setup").classList.remove("hidden");
+}
+
+function toggleElevesDetail(){
+  document.getElementById("elevesDetail").classList.toggle("hidden");
+}
+
+function updateNbElevesBtn(){
+  var cls = state.currentClass ? state.db.classes[state.currentClass] : null;
+  var n = cls ? cls.students.length : 0;
+  document.getElementById("nbElevesBtn").textContent = n;
 }
 
 function saveStudentList(){
@@ -677,6 +706,7 @@ function saveStudentList(){
 }
 
 function renderStudentChips(){
+  updateNbElevesBtn();
   var zone = document.getElementById("listeElevesChips");
   if(!state.currentClass){ zone.innerHTML = ""; return; }
   var cls = state.db.classes[state.currentClass];
@@ -732,6 +762,21 @@ function changerDeClasse(){
   if(state.currentClass){ renderSessionsList(); }
 }
 
+function sessionDateRangeLabel(session){
+  var dates = [];
+  for(var st in session.records){
+    if(session.records.hasOwnProperty(st) && session.records[st].date){
+      dates.push(session.records[st].date);
+    }
+  }
+  if(dates.length === 0){ return "Aucune date saisie"; }
+  dates.sort();
+  var min = dates[0];
+  var max = dates[dates.length - 1];
+  if(min === max){ return formatDateOnly(min); }
+  return formatDateOnly(min) + " \u2192 " + formatDateOnly(max);
+}
+
 /* ---------- SESSIONS D'EVALUATION ---------- */
 function renderSessionsList(){
   var zone = document.getElementById("listeSessions");
@@ -741,8 +786,10 @@ function renderSessionsList(){
     return;
   }
   var sorted = cls.sessions.slice().sort(function(a,b){
-    if(a.date === b.date){ return 0; }
-    return a.date < b.date ? 1 : -1;
+    var ca = a.createdAt || "";
+    var cb = b.createdAt || "";
+    if(ca === cb){ return 0; }
+    return ca < cb ? 1 : -1;
   });
   var html = "";
   for(var i=0; i<sorted.length; i++){
@@ -753,7 +800,7 @@ function renderSessionsList(){
     html += "<div class=\"session-ligne\">";
     html += "<div class=\"session-info\">";
     html += "<div class=\"session-titre\">" + escapeHtml(s.title) + "</div>";
-    html += "<div class=\"session-meta\">" + formatDateOnly(s.date) + " \u2014 " + escapeHtml(COMP_LABELS[s.competence]) + " \u2014 " + done + "/" + total + " " + TXT.eleves + "</div>";
+    html += "<div class=\"session-meta\">" + sessionDateRangeLabel(s) + " \u2014 " + escapeHtml(COMP_LABELS[s.competence]) + " \u2014 " + done + "/" + total + " " + TXT.eleves + "</div>";
     html += "</div>";
     html += "<button class=\"btnOuvrirSession\" data-id=\"" + s.id + "\">Ouvrir</button>";
     html += "<button class=\"session-sup\" data-id=\"" + s.id + "\" title=\"Supprimer cette evaluation\">\u2715</button>";
@@ -777,19 +824,17 @@ function renderSessionsList(){
 function createSession(){
   if(!state.currentClass){ return; }
   var titre = document.getElementById("nouvelleSessionTitre").value.replace(/^\s+|\s+$/g,"");
-  var date = document.getElementById("nouvelleSessionDate").value;
   var comp = document.getElementById("nouvelleSessionCompetence").value;
   if(titre === ""){ alert("Merci de donner un titre a cette evaluation."); return; }
-  if(date === ""){ date = todayISO(); }
   var cls = state.db.classes[state.currentClass];
   var template = cls.templates[comp];
   var criteria = (template && template.length > 0) ? JSON.parse(JSON.stringify(template)) : [{ name:"", max:5 }];
   var session = {
     id: genId(),
     title: titre,
-    date: date,
     competence: comp,
     criteria: criteria,
+    createdAt: new Date().toISOString(),
     records: {}
   };
   cls.sessions.push(session);
@@ -818,7 +863,6 @@ function openSession(id){
   document.getElementById("view-setup").classList.add("hidden");
   document.getElementById("view-eval").classList.remove("hidden");
   document.getElementById("evalSessionTitre").value = session.title;
-  document.getElementById("evalSessionDate").value = session.date;
   document.getElementById("evalSessionCompetenceLabel").textContent = COMP_LABELS[session.competence];
   document.getElementById("panelEleves").classList.add("hidden");
   renderCriteriaEditor();
@@ -924,6 +968,7 @@ function onStudentChange(){
   state.currentStudent = document.getElementById("eleveSelect").value;
   var session = findSession(state.currentSessionId);
   var rec = (session && state.currentStudent && session.records[state.currentStudent]) ? session.records[state.currentStudent] : null;
+  document.getElementById("evalStudentDate").value = rec && rec.date ? rec.date : todayISO();
   renderScoreInputs(rec);
   document.getElementById("pointAnglaisInput").value = rec ? (rec.pointAnglais || "") : "";
   document.getElementById("appreciationInput").value = rec ? (rec.appreciation || "") : "";
@@ -1024,7 +1069,10 @@ function saveEvaluation(advanceToNext){
   var session = findSession(state.currentSessionId);
   if(!session){ return; }
   var data = collectCurrentScores();
+  var dateVal = document.getElementById("evalStudentDate").value;
+  if(dateVal === ""){ dateVal = todayISO(); }
   var record = {
+    date: dateVal,
     criteria: data.criteria,
     total: data.total,
     maxTotal: data.maxTotal,
@@ -1037,6 +1085,7 @@ function saveEvaluation(advanceToNext){
   session.records[state.currentStudent] = record;
   saveDB();
   renderHistorique();
+  renderSessionsList();
   if(!document.getElementById("panelEleves").classList.contains("hidden")){
     renderElevesPanel();
   }
@@ -1104,7 +1153,7 @@ function getStudentCompetenceHistory(cls, studentName, competence){
     if(s.competence !== competence){ continue; }
     var rec = s.records[studentName];
     if(!rec){ continue; }
-    list.push({ sessionId: s.id, sessionTitle: s.title, date: s.date, record: rec });
+    list.push({ sessionId: s.id, sessionTitle: s.title, date: rec.date, record: rec });
   }
   list.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
   return list;
@@ -1246,6 +1295,7 @@ document.addEventListener("DOMContentLoaded", function(){
   document.getElementById("btnCreerClasse").addEventListener("click", createClass);
   document.getElementById("btnSauverEleves").addEventListener("click", saveStudentList);
   document.getElementById("btnAjouterEleve").addEventListener("click", ajouterUnEleve);
+  document.getElementById("btnToggleEleves").addEventListener("click", toggleElevesDetail);
   document.getElementById("ajoutEleveInput").addEventListener("keydown", function(ev){
     if(ev.key === "Enter"){ ajouterUnEleve(); }
   });
@@ -1257,13 +1307,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(session){
       session.title = document.getElementById("evalSessionTitre").value;
       saveDB();
-    }
-  });
-  document.getElementById("evalSessionDate").addEventListener("change", function(){
-    var session = findSession(state.currentSessionId);
-    if(session){
-      session.date = document.getElementById("evalSessionDate").value;
-      saveDB();
+      renderSessionsList();
     }
   });
 
