@@ -780,7 +780,7 @@ function selectClass(nom){
   document.getElementById("carteSessions").classList.remove("hidden");
   var cls = state.db.classes[nom];
   document.getElementById("listeElevesInput").value = cls.students.join("\n");
-  document.getElementById("fab").classList.remove("hidden");
+  document.getElementById("fab").classList.add("hidden");
   document.getElementById("nouvelleSessionTitre").value = "";
   if(cls.students.length > 0){
     document.getElementById("elevesDetail").classList.add("hidden");
@@ -873,6 +873,7 @@ function ajouterUnEleve(){
 
 function changerDeClasse(){
   state.currentSessionId = null;
+  document.getElementById("fab").classList.add("hidden");
   document.getElementById("view-eval").classList.add("hidden");
   document.getElementById("view-setup").classList.remove("hidden");
   if(state.currentClass){ renderSessionsList(); }
@@ -1047,6 +1048,7 @@ function openSession(id){
   state.currentCriteria = session.criteria;
   document.getElementById("view-setup").classList.add("hidden");
   document.getElementById("view-eval").classList.remove("hidden");
+  document.getElementById("fab").classList.remove("hidden");
   document.getElementById("evalSessionTitre").value = session.title;
   document.getElementById("evalSessionCompetenceLabel").textContent = COMP_LABELS[session.competence];
   document.getElementById("panelEleves").classList.add("hidden");
@@ -1515,84 +1517,109 @@ function toggleFabMenu(){
   document.getElementById("fabMenu").classList.toggle("open");
 }
 
-function buildStudentPageHTML(studentName){
+function buildStudentPageHTML(studentName, sessionId){
   var cls = state.db.classes[state.currentClass];
+  var session = null;
+  for(var si=0; si<cls.sessions.length; si++){
+    if(cls.sessions[si].id === sessionId){ session = cls.sessions[si]; break; }
+  }
   var html = "<div class=\"page\">";
   html += "<h1>" + escapeHtml(studentName) + "</h1>";
   html += "<div class=\"bloc\"><b>Classe</b>" + escapeHtml(state.currentClass) + "</div>";
   html += "<div class=\"bloc\"><b>" + TXT.Genere + "</b>" + formatDate(new Date().toISOString()) + "</div>";
 
-  var comps = ["POC","POI","EE"];
-  for(var c=0; c<comps.length; c++){
-    var code = comps[c];
-    var hist = getStudentCompetenceHistory(cls, studentName, code);
-    html += "<h2>" + escapeHtml(COMP_LABELS[code]) + "</h2>";
-    if(hist.length === 0){
-      html += "<div class=\"bloc\">" + TXT.nonEvalue + "</div>";
-      continue;
-    }
-    var last = hist[hist.length - 1];
-    html += "<div class=\"bloc\"><b>" + TXT.derniereEval + "</b>" + escapeHtml(last.sessionTitle) + " \u2014 " + formatDateOnly(last.date) + "</div>";
+  if(!session){
+    html += "<div class=\"bloc\">Evaluation introuvable.</div></div>";
+    return html;
+  }
 
-    var critPrep = [];
-    var critOral = [];
-    for(var k=0; k<last.record.criteria.length; k++){
-      var cr = last.record.criteria[k];
-      if(cr.group === "prep"){ critPrep.push(cr); }else{ critOral.push(cr); }
-    }
+  var code = session.competence;
+  html += "<div class=\"bloc\"><b>Evaluation</b>" + escapeHtml(session.title) + "</div>";
+  html += "<h2>" + escapeHtml(COMP_LABELS[code]) + "</h2>";
 
-    if(critPrep.length > 0){
-      html += "<h3>1. Travail pr\u00e9paratoire</h3>";
-      html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
-      for(var p=0; p<critPrep.length; p++){
-        html += "<tr><td>" + escapeHtml(critPrep[p].name) + "</td><td>" + critPrep[p].max + "</td><td>" + critPrep[p].score + "</td></tr>";
-      }
-      html += "</table>";
-      var prepLigne = (last.record.prepTotal === "ABS" || last.record.prepTotal === null || last.record.prepTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + last.record.prepTotal + " / " + last.record.prepMaxTotal);
-      html += "<div class=\"totalPrint\">" + prepLigne + "</div>";
-    }
+  var rec = session.records[studentName];
+  if(!rec){
+    html += "<div class=\"bloc\">Non \u00e9valu\u00e9(e) pour cette \u00e9valuation.</div>";
+    html += "</div>";
+    return html;
+  }
 
-    html += "<h3>" + (critPrep.length > 0 ? "2. " : "") + "Prestation orale</h3>";
+  html += "<div class=\"bloc\"><b>Date de passage</b>" + formatDateOnly(rec.date) + "</div>";
+
+  var critPrep = [];
+  var critOral = [];
+  for(var k=0; k<rec.criteria.length; k++){
+    var cr = rec.criteria[k];
+    if(cr.group === "prep"){ critPrep.push(cr); }else{ critOral.push(cr); }
+  }
+
+  if(critPrep.length > 0){
+    html += "<h3>1. Travail pr\u00e9paratoire</h3>";
     html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
-    for(var o=0; o<critOral.length; o++){
-      html += "<tr><td>" + escapeHtml(critOral[o].name) + "</td><td>" + critOral[o].max + "</td><td>" + critOral[o].score + "</td></tr>";
+    for(var p=0; p<critPrep.length; p++){
+      html += "<tr><td>" + escapeHtml(critPrep[p].name) + "</td><td>" + critPrep[p].max + "</td><td>" + critPrep[p].score + "</td></tr>";
     }
     html += "</table>";
-    var oralLigne = (last.record.oralTotal === "ABS" || last.record.oralTotal === null || last.record.oralTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + last.record.oralTotal + " / " + last.record.oralMaxTotal);
-    html += "<div class=\"totalPrint\">" + oralLigne + "</div>";
-
-    var totalLigne = (last.record.total === "ABS") ? "Total : ABS" : ("Total : " + last.record.total + " / " + last.record.maxTotal);
-    html += "<div class=\"bloc\"><b>Total g\u00e9n\u00e9ral</b>" + totalLigne + "</div>";
-    if(last.record.total === "ABS" && last.record.absenceStatus){
-      html += "<div class=\"bloc\"><b>Statut de l'absence</b>" + ABSENCE_LABELS[last.record.absenceStatus] + "</div>";
-    }
-
-    if(hist.length > 1){
-      html += "<h3>" + TXT.historique + " \u2014 " + escapeHtml(COMP_LABELS[code]) + " (Prestation orale)</h3>";
-      html += "<table><tr><th>Evaluation</th><th>Date</th><th>Note</th><th>Progression</th><th>Absence</th></tr>";
-      var prevPct = null;
-      for(var i=0; i<hist.length; i++){
-        var item = hist[i];
-        var pv = getProgressionValue(item.record);
-        var isAbs = (pv.total === "ABS" || pv.total === null || pv.total === undefined);
-        var totalCell = isAbs ? (item.record.total === "ABS" ? "ABS" : "\u2014") : (pv.total + " / " + pv.maxTotal);
-        var absCell = (item.record.total === "ABS" && item.record.absenceStatus) ? ABSENCE_LABELS[item.record.absenceStatus] : "";
-        var arrowTxt = "\u2014";
-        if(!isAbs){
-          var pct = pv.maxTotal > 0 ? (pv.total / pv.maxTotal) : 0;
-          if(prevPct !== null){ var a = arrowSymbol(pct - prevPct); arrowTxt = a.symb; }
-          prevPct = pct;
-        }
-        html += "<tr><td>" + escapeHtml(item.sessionTitle) + "</td><td>" + formatDateOnly(item.date) + "</td><td>" + totalCell + "</td><td>" + arrowTxt + "</td><td>" + absCell + "</td></tr>";
-      }
-      html += "</table>";
-    }
-
-    html += "<div class=\"bloc\"><b>" + TXT.pointAnglais + "</b>" + nl2br(last.record.pointAnglais) + "</div>";
-    html += "<div class=\"bloc\"><b>" + TXT.Appreciation + " " + TXT.generale + "</b>" + nl2br(last.record.appreciation) + "</div>";
-    html += "<div class=\"bloc\"><b>Conseils</b>" + nl2br(last.record.conseils) + "</div>";
-    html += "<div class=\"bloc\"><b>Recommandations de travail</b>" + nl2br(last.record.recommandations) + "</div>";
+    var prepLigne = (rec.prepTotal === "ABS" || rec.prepTotal === null || rec.prepTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + rec.prepTotal + " / " + rec.prepMaxTotal);
+    html += "<div class=\"totalPrint\">" + prepLigne + "</div>";
   }
+
+  html += "<h3>" + (critPrep.length > 0 ? "2. " : "") + "Prestation orale</h3>";
+  html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
+  for(var o=0; o<critOral.length; o++){
+    html += "<tr><td>" + escapeHtml(critOral[o].name) + "</td><td>" + critOral[o].max + "</td><td>" + critOral[o].score + "</td></tr>";
+  }
+  html += "</table>";
+  var oralLigne = (rec.oralTotal === "ABS" || rec.oralTotal === null || rec.oralTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + rec.oralTotal + " / " + rec.oralMaxTotal);
+  html += "<div class=\"totalPrint\">" + oralLigne + "</div>";
+
+  var totalLigne = (rec.total === "ABS") ? "Total : ABS" : ("Total : " + rec.total + " / " + rec.maxTotal);
+  html += "<div class=\"bloc\"><b>Total g\u00e9n\u00e9ral</b>" + totalLigne + "</div>";
+  if(rec.total === "ABS" && rec.absenceStatus){
+    html += "<div class=\"bloc\"><b>Statut de l'absence</b>" + ABSENCE_LABELS[rec.absenceStatus] + "</div>";
+  }
+
+  var hist = getStudentCompetenceHistory(cls, studentName, code);
+  var posIdx = -1;
+  for(var hi=0; hi<hist.length; hi++){ if(hist[hi].sessionId === session.id){ posIdx = hi; break; } }
+  if(posIdx > 0){
+    var pv = getProgressionValue(rec);
+    var prevItem = hist[posIdx - 1];
+    var pvPrev = getProgressionValue(prevItem.record);
+    if(pv.total !== "ABS" && pv.total !== null && pv.total !== undefined && pvPrev.total !== "ABS" && pvPrev.total !== null && pvPrev.total !== undefined){
+      var pctCur = pv.maxTotal > 0 ? (pv.total / pv.maxTotal) : 0;
+      var pctPrev = pvPrev.maxTotal > 0 ? (pvPrev.total / pvPrev.maxTotal) : 0;
+      var arrowObj = arrowSymbol(pctCur - pctPrev);
+      html += "<div class=\"bloc\"><b>Progression (Prestation orale)</b>" + arrowObj.symb + " par rapport \u00e0 \u00ab " + escapeHtml(prevItem.sessionTitle) + " \u00bb (" + formatDateOnly(prevItem.date) + " : " + pvPrev.total + "/" + pvPrev.maxTotal + ")</div>";
+    }
+  }
+
+  if(hist.length > 1){
+    html += "<h3>" + TXT.historique + " \u2014 " + escapeHtml(COMP_LABELS[code]) + " (Prestation orale)</h3>";
+    html += "<table><tr><th>Evaluation</th><th>Date</th><th>Note</th><th>Progression</th><th>Absence</th></tr>";
+    var prevPct = null;
+    for(var i=0; i<hist.length; i++){
+      var item = hist[i];
+      var pv2 = getProgressionValue(item.record);
+      var isAbs = (pv2.total === "ABS" || pv2.total === null || pv2.total === undefined);
+      var totalCell = isAbs ? (item.record.total === "ABS" ? "ABS" : "\u2014") : (pv2.total + " / " + pv2.maxTotal);
+      var absCell = (item.record.total === "ABS" && item.record.absenceStatus) ? ABSENCE_LABELS[item.record.absenceStatus] : "";
+      var arrowTxt = "\u2014";
+      if(!isAbs){
+        var pct = pv2.maxTotal > 0 ? (pv2.total / pv2.maxTotal) : 0;
+        if(prevPct !== null){ var a2 = arrowSymbol(pct - prevPct); arrowTxt = a2.symb; }
+        prevPct = pct;
+      }
+      var ligneClasse = (item.sessionId === session.id) ? " style=\"font-weight:bold;\"" : "";
+      html += "<tr" + ligneClasse + "><td>" + escapeHtml(item.sessionTitle) + "</td><td>" + formatDateOnly(item.date) + "</td><td>" + totalCell + "</td><td>" + arrowTxt + "</td><td>" + absCell + "</td></tr>";
+    }
+    html += "</table>";
+  }
+
+  html += "<div class=\"bloc\"><b>" + TXT.pointAnglais + "</b>" + nl2br(rec.pointAnglais) + "</div>";
+  html += "<div class=\"bloc\"><b>" + TXT.Appreciation + " " + TXT.generale + "</b>" + nl2br(rec.appreciation) + "</div>";
+  html += "<div class=\"bloc\"><b>Conseils</b>" + nl2br(rec.conseils) + "</div>";
+  html += "<div class=\"bloc\"><b>Recommandations de travail</b>" + nl2br(rec.recommandations) + "</div>";
 
   html += "</div>";
   return html;
@@ -1600,7 +1627,8 @@ function buildStudentPageHTML(studentName){
 
 function printSingleStudent(){
   if(!state.currentStudent){ alert("Selectionnez d'abord un eleve."); return; }
-  var content = buildStudentPageHTML(state.currentStudent);
+  if(!state.currentSessionId){ alert("Ouvrez d'abord une evaluation."); return; }
+  var content = buildStudentPageHTML(state.currentStudent, state.currentSessionId);
   document.getElementById("printArea").innerHTML = content;
   document.getElementById("fabMenu").classList.remove("open");
   setTimeout(function(){ window.print(); }, 50);
@@ -1609,9 +1637,10 @@ function printSingleStudent(){
 function printAllStudents(){
   var cls = state.db.classes[state.currentClass];
   if(!cls || cls.students.length === 0){ alert("Aucun eleve dans cette classe."); return; }
+  if(!state.currentSessionId){ alert("Ouvrez d'abord une evaluation."); return; }
   var html = "";
   for(var i=0; i<cls.students.length; i++){
-    html += buildStudentPageHTML(cls.students[i]);
+    html += buildStudentPageHTML(cls.students[i], state.currentSessionId);
   }
   document.getElementById("printArea").innerHTML = html;
   document.getElementById("fabMenu").classList.remove("open");
