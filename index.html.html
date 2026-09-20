@@ -105,6 +105,11 @@
   .critere-ligne{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
   .critere-ligne input[type=text]{flex:3;}
   .critere-ligne input[type=number]{flex:1;}
+  .critere-bloc{border:1px solid var(--bordure); border-radius:10px; padding:10px; margin-bottom:10px; background:#fbfcfe;}
+  .critere-bloc .critere-ligne{margin-bottom:8px;}
+  .critere-groupe{display:flex; gap:6px; flex-wrap:wrap;}
+  .grp-btn{flex:1; min-width:130px; background:#f1f3f5; color:var(--gris); border:1.5px solid var(--bordure); padding:8px 6px; font-size:11px; font-weight:700; border-radius:8px;}
+  .grp-btn.actif{background:var(--bleu); color:#fff; border-color:var(--bleu);}
   .critere-ligne .sup{
     background:#fff0f0; color:var(--rouge); border:none; width:38px; height:38px; font-size:16px; flex:none;
   }
@@ -122,6 +127,10 @@
     font-size:22px; font-weight:700; margin:14px 0;
   }
   .total-box span{font-size:14px; font-weight:400; display:block; opacity:.85;}
+
+  .subtotal-box{flex:1; background:#eef3fa; border:1px solid #cfe0f2; border-radius:10px; padding:8px 10px; text-align:center;}
+  .subtotal-label{font-size:11px; color:var(--gris); font-weight:700; line-height:1.2;}
+  .subtotal-value{font-size:17px; font-weight:700; color:var(--bleu-fonce); margin-top:2px;}
 
   .cp-row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:12px 0 4px;}
   .cp-row label{margin:0; flex:1;}
@@ -342,6 +351,17 @@ Nom Prénom
 
         <div class="total-box" id="totalBox">0 / 0<span>Total</span></div>
 
+        <div class="row" id="subtotalsZone" style="margin:0 0 10px 0;">
+          <div class="subtotal-box hidden" id="subtotalPrepBox">
+            <div class="subtotal-label">Travail préparatoire</div>
+            <div class="subtotal-value" id="subtotalPrepValue">0/0</div>
+          </div>
+          <div class="subtotal-box" id="subtotalOralBox">
+            <div class="subtotal-label">Prestation orale (suivi progression)</div>
+            <div class="subtotal-value" id="subtotalOralValue">0/0</div>
+          </div>
+        </div>
+
         <div id="absenceStatusZone" class="hidden">
           <label style="margin-top:0;">Statut de l'absence</label>
           <div class="row">
@@ -394,6 +414,7 @@ Nom Prénom
 
         <hr class="separateur">
         <h2>Progression — historique de cette compétence</h2>
+        <p class="aide">Seule la note de la Prestation orale est prise en compte pour les flèches de progression.</p>
         <div id="historiqueZone"><p class="aide">Aucune évaluation enregistrée pour l'instant.</p></div>
       </div>
 
@@ -1048,10 +1069,17 @@ function renderCriteriaEditor(){
   var html = "";
   for(var i=0; i<state.currentCriteria.length; i++){
     var c = state.currentCriteria[i];
+    var grp = (c.group === "prep") ? "prep" : "oral";
+    html += "<div class=\"critere-bloc\">";
     html += "<div class=\"critere-ligne\">";
     html += "<input type=\"text\" data-idx=\"" + i + "\" class=\"critNom\" placeholder=\"Nom du critere\" value=\"" + escapeHtml(c.name) + "\">";
     html += "<input type=\"number\" data-idx=\"" + i + "\" class=\"critMax\" min=\"0\" step=\"0.5\" placeholder=\"Points\" value=\"" + c.max + "\">";
     html += "<button class=\"sup\" data-idx=\"" + i + "\">✕</button>";
+    html += "</div>";
+    html += "<div class=\"critere-groupe\">";
+    html += "<button type=\"button\" class=\"grp-btn" + (grp === "oral" ? " actif" : "") + "\" data-idx=\"" + i + "\" data-grp=\"oral\">Prestation orale (suivi progression)</button>";
+    html += "<button type=\"button\" class=\"grp-btn" + (grp === "prep" ? " actif" : "") + "\" data-idx=\"" + i + "\" data-grp=\"prep\">Travail préparatoire (hors progression)</button>";
+    html += "</div>";
     html += "</div>";
   }
   zone.innerHTML = html;
@@ -1079,24 +1107,39 @@ function renderCriteriaEditor(){
       renderCriteriaEditor();
     });
   }
+  var grpBtns = zone.querySelectorAll(".grp-btn");
+  for(var g=0; g<grpBtns.length; g++){
+    grpBtns[g].addEventListener("click", function(ev){
+      var idx = parseInt(ev.currentTarget.getAttribute("data-idx"), 10);
+      state.currentCriteria[idx].group = ev.currentTarget.getAttribute("data-grp");
+      renderCriteriaEditor();
+    });
+  }
 }
 
 function addCriterionRow(){
-  state.currentCriteria.push({ name:"", max:5 });
+  state.currentCriteria.push({ name:"", max:5, group:"oral" });
   renderCriteriaEditor();
 }
 
 function validateBareme(){
   var valides = [];
+  var aUnCritereOral = false;
   for(var i=0; i<state.currentCriteria.length; i++){
     var c = state.currentCriteria[i];
     if(c.name.replace(/^\s+|\s+$/g,"") !== ""){
-      valides.push({ name:c.name, max: c.max || 0 });
+      var grp = (c.group === "prep") ? "prep" : "oral";
+      if(grp === "oral"){ aUnCritereOral = true; }
+      valides.push({ name:c.name, max: c.max || 0, group: grp });
     }
   }
   if(valides.length === 0){
     alert("Ajoutez au moins un critere nomme avant de valider.");
     return;
+  }
+  if(!aUnCritereOral){
+    var continuer = confirm("Aucun critere n'est classe en Prestation orale : le suivi de progression restera vide pour cette evaluation. Continuer quand meme ?");
+    if(!continuer){ return; }
   }
   state.currentCriteria = valides;
   var session = findSession(state.currentSessionId);
@@ -1147,8 +1190,31 @@ function onStudentChange(){
 
 function renderScoreInputs(existingRecord){
   var zone = document.getElementById("scoresZone");
-  var html = "";
+  var groupes = { prep: [], oral: [] };
   for(var i=0; i<state.currentCriteria.length; i++){
+    var c = state.currentCriteria[i];
+    var grp = (c.group === "prep") ? "prep" : "oral";
+    groupes[grp].push(i);
+  }
+  var html = "";
+  if(groupes.prep.length > 0){
+    html += "<h3 class=\"souscarte\">1. Travail préparatoire</h3>";
+    html += buildScoreRowsHtml(groupes.prep, existingRecord);
+  }
+  html += "<h3 class=\"souscarte\">" + (groupes.prep.length > 0 ? "2. " : "") + "Prestation orale</h3>";
+  html += buildScoreRowsHtml(groupes.oral, existingRecord);
+  zone.innerHTML = html;
+  var inputs = zone.querySelectorAll(".scoreInput");
+  for(var j=0; j<inputs.length; j++){
+    inputs[j].addEventListener("input", updateTotal);
+  }
+  updateTotal();
+}
+
+function buildScoreRowsHtml(indexList, existingRecord){
+  var html = "";
+  for(var n=0; n<indexList.length; n++){
+    var i = indexList[n];
     var c = state.currentCriteria[i];
     var valeur = "";
     if(existingRecord && existingRecord.criteria){
@@ -1161,12 +1227,10 @@ function renderScoreInputs(existingRecord){
     html += "<input type=\"text\" class=\"scoreInput\" data-idx=\"" + i + "\" placeholder=\"0-" + c.max + " ou ABS\" value=\"" + escapeHtml(valeur) + "\">";
     html += "</div>";
   }
-  zone.innerHTML = html;
-  var inputs = zone.querySelectorAll(".scoreInput");
-  for(var j=0; j<inputs.length; j++){
-    inputs[j].addEventListener("input", updateTotal);
+  if(indexList.length === 0){
+    html += "<p class=\"aide\">Aucun critere dans ce groupe.</p>";
   }
-  updateTotal();
+  return html;
 }
 
 function normalizeScoreValue(raw){
@@ -1178,32 +1242,55 @@ function normalizeScoreValue(raw){
   return v;
 }
 
-function updateTotal(){
+function computeScoreBreakdown(){
   var inputs = document.querySelectorAll(".scoreInput");
-  var total = 0;
-  var maxCounted = 0;
-  var absCount = 0;
-  var hasNumeric = false;
-  for(var i=0; i<inputs.length; i++){
-    var v = normalizeScoreValue(inputs[i].value);
-    var maxCrit = state.currentCriteria[i] ? state.currentCriteria[i].max : 0;
+  var total = 0, maxCounted = 0, absCount = 0, hasNumeric = false;
+  var prep = { total:0, max:0, hasNum:false, any:false };
+  var oral = { total:0, max:0, hasNum:false, any:false };
+  for(var g=0; g<state.currentCriteria.length; g++){
+    if(state.currentCriteria[g].group === "prep"){ prep.any = true; }
+    else{ oral.any = true; }
+  }
+  for(var j=0; j<inputs.length; j++){
+    var idx = parseInt(inputs[j].getAttribute("data-idx"), 10);
+    var crit = state.currentCriteria[idx];
+    var maxCrit = crit ? crit.max : 0;
+    var grp = (crit && crit.group === "prep") ? prep : oral;
+    var v = normalizeScoreValue(inputs[j].value);
     if(v === "ABS"){
       absCount++;
     }else{
       hasNumeric = true;
-      if(v !== ""){ total += v; }
+      grp.hasNum = true;
+      if(v !== ""){ total += v; grp.total += v; }
       maxCounted += maxCrit;
+      grp.max += maxCrit;
     }
   }
+  return { total: total, maxCounted: maxCounted, absCount: absCount, hasNumeric: hasNumeric, prep: prep, oral: oral };
+}
+
+function updateTotal(){
+  var b = computeScoreBreakdown();
   var box = document.getElementById("totalBox");
-  if(!hasNumeric && absCount > 0){
+  if(!b.hasNumeric && b.absCount > 0){
     box.innerHTML = "ABS<span>Total</span>";
   }else{
-    var suffix = absCount > 0 ? (" (" + absCount + " crit. ABS)") : "";
-    box.innerHTML = round1(total) + " / " + round1(maxCounted) + suffix + "<span>Total</span>";
+    var suffix = b.absCount > 0 ? (" (" + b.absCount + " crit. ABS)") : "";
+    box.innerHTML = round1(b.total) + " / " + round1(b.maxCounted) + suffix + "<span>Total</span>";
   }
+
+  var prepBox = document.getElementById("subtotalPrepBox");
+  if(b.prep.any){
+    prepBox.classList.remove("hidden");
+    document.getElementById("subtotalPrepValue").textContent = b.prep.hasNum ? (round1(b.prep.total) + "/" + round1(b.prep.max)) : "ABS";
+  }else{
+    prepBox.classList.add("hidden");
+  }
+  document.getElementById("subtotalOralValue").textContent = b.oral.hasNum ? (round1(b.oral.total) + "/" + round1(b.oral.max)) : (b.oral.any ? "ABS" : "—");
+
   var zoneAbs = document.getElementById("absenceStatusZone");
-  if(absCount > 0){
+  if(b.absCount > 0){
     zoneAbs.classList.remove("hidden");
   }else{
     zoneAbs.classList.add("hidden");
@@ -1227,23 +1314,48 @@ function collectCurrentScores(){
   var total = 0;
   var maxCounted = 0;
   var hasNumeric = false;
+  var prep = { total:0, max:0, hasNum:false, any:false };
+  var oral = { total:0, max:0, hasNum:false, any:false };
+  for(var g=0; g<state.currentCriteria.length; g++){
+    if(state.currentCriteria[g].group === "prep"){ prep.any = true; }
+    else{ oral.any = true; }
+  }
   for(var i=0; i<inputs.length; i++){
+    var idx = parseInt(inputs[i].getAttribute("data-idx"), 10);
+    var crit = state.currentCriteria[idx];
+    var maxCrit = crit.max;
+    var grpKey = (crit.group === "prep") ? "prep" : "oral";
+    var grp = (grpKey === "prep") ? prep : oral;
     var v = normalizeScoreValue(inputs[i].value);
-    var maxCrit = state.currentCriteria[i].max;
     var scoreVal;
     if(v === "ABS"){
       scoreVal = "ABS";
     }else{
       scoreVal = (v === "") ? 0 : v;
       hasNumeric = true;
+      grp.hasNum = true;
       total += scoreVal;
       maxCounted += maxCrit;
+      grp.total += scoreVal;
+      grp.max += maxCrit;
     }
-    criteria.push({ name: state.currentCriteria[i].name, max: maxCrit, score: scoreVal });
+    criteria.push({ name: crit.name, max: maxCrit, group: grpKey, score: scoreVal });
   }
   var totalOut = hasNumeric ? round1(total) : "ABS";
   var maxOut = hasNumeric ? round1(maxCounted) : 0;
-  return { criteria: criteria, total: totalOut, maxTotal: maxOut };
+  var prepTotalOut = prep.any ? (prep.hasNum ? round1(prep.total) : "ABS") : null;
+  var prepMaxOut = prep.hasNum ? round1(prep.max) : 0;
+  var oralTotalOut = oral.any ? (oral.hasNum ? round1(oral.total) : "ABS") : null;
+  var oralMaxOut = oral.hasNum ? round1(oral.max) : 0;
+  return {
+    criteria: criteria,
+    total: totalOut,
+    maxTotal: maxOut,
+    prepTotal: prepTotalOut,
+    prepMaxTotal: prepMaxOut,
+    oralTotal: oralTotalOut,
+    oralMaxTotal: oralMaxOut
+  };
 }
 
 function saveEvaluation(advanceToNext){
@@ -1258,6 +1370,10 @@ function saveEvaluation(advanceToNext){
     criteria: data.criteria,
     total: data.total,
     maxTotal: data.maxTotal,
+    prepTotal: data.prepTotal,
+    prepMaxTotal: data.prepMaxTotal,
+    oralTotal: data.oralTotal,
+    oralMaxTotal: data.oralMaxTotal,
     absenceStatus: state.currentAbsenceStatus,
     pointAnglais: document.getElementById("pointAnglaisInput").value,
     appreciation: document.getElementById("appreciationInput").value,
@@ -1342,6 +1458,13 @@ function getStudentCompetenceHistory(cls, studentName, competence){
   return list;
 }
 
+function getProgressionValue(record){
+  if(record.oralTotal !== undefined && record.oralTotal !== null){
+    return { total: record.oralTotal, maxTotal: record.oralMaxTotal };
+  }
+  return { total: record.total, maxTotal: record.maxTotal };
+}
+
 function renderHistorique(){
   var zone = document.getElementById("historiqueZone");
   var session = findSession(state.currentSessionId);
@@ -1359,11 +1482,12 @@ function renderHistorique(){
   var prevPct = null;
   for(var i=0; i<hist.length; i++){
     var item = hist[i];
-    var isAbs = (item.record.total === "ABS");
+    var pv = getProgressionValue(item.record);
+    var isAbs = (pv.total === "ABS" || pv.total === null || pv.total === undefined);
     var fleche = { symb:"\u2014", cls:"fleche-flat" };
-    var totalTxt = isAbs ? ("ABS" + (item.record.absenceStatus ? " (" + ABSENCE_LABELS[item.record.absenceStatus] + ")" : "")) : (item.record.total + " / " + item.record.maxTotal);
+    var totalTxt = isAbs ? (item.record.total === "ABS" ? ("ABS" + (item.record.absenceStatus ? " (" + ABSENCE_LABELS[item.record.absenceStatus] + ")" : "")) : "—") : (pv.total + " / " + pv.maxTotal);
     if(!isAbs){
-      var pct = item.record.maxTotal > 0 ? (item.record.total / item.record.maxTotal) : 0;
+      var pct = pv.maxTotal > 0 ? (pv.total / pv.maxTotal) : 0;
       if(prevPct !== null){ fleche = arrowSymbol(pct - prevPct); }
       prevPct = pct;
     }
@@ -1410,30 +1534,52 @@ function buildStudentPageHTML(studentName){
     var last = hist[hist.length - 1];
     html += "<div class=\"bloc\"><b>" + TXT.derniereEval + "</b>" + escapeHtml(last.sessionTitle) + " \u2014 " + formatDateOnly(last.date) + "</div>";
 
-    html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
+    var critPrep = [];
+    var critOral = [];
     for(var k=0; k<last.record.criteria.length; k++){
       var cr = last.record.criteria[k];
-      html += "<tr><td>" + escapeHtml(cr.name) + "</td><td>" + cr.max + "</td><td>" + cr.score + "</td></tr>";
+      if(cr.group === "prep"){ critPrep.push(cr); }else{ critOral.push(cr); }
+    }
+
+    if(critPrep.length > 0){
+      html += "<h3>1. Travail pr\u00e9paratoire</h3>";
+      html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
+      for(var p=0; p<critPrep.length; p++){
+        html += "<tr><td>" + escapeHtml(critPrep[p].name) + "</td><td>" + critPrep[p].max + "</td><td>" + critPrep[p].score + "</td></tr>";
+      }
+      html += "</table>";
+      var prepLigne = (last.record.prepTotal === "ABS" || last.record.prepTotal === null || last.record.prepTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + last.record.prepTotal + " / " + last.record.prepMaxTotal);
+      html += "<div class=\"totalPrint\">" + prepLigne + "</div>";
+    }
+
+    html += "<h3>" + (critPrep.length > 0 ? "2. " : "") + "Prestation orale</h3>";
+    html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
+    for(var o=0; o<critOral.length; o++){
+      html += "<tr><td>" + escapeHtml(critOral[o].name) + "</td><td>" + critOral[o].max + "</td><td>" + critOral[o].score + "</td></tr>";
     }
     html += "</table>";
+    var oralLigne = (last.record.oralTotal === "ABS" || last.record.oralTotal === null || last.record.oralTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + last.record.oralTotal + " / " + last.record.oralMaxTotal);
+    html += "<div class=\"totalPrint\">" + oralLigne + "</div>";
+
     var totalLigne = (last.record.total === "ABS") ? "Total : ABS" : ("Total : " + last.record.total + " / " + last.record.maxTotal);
-    html += "<div class=\"totalPrint\">" + totalLigne + "</div>";
+    html += "<div class=\"bloc\"><b>Total g\u00e9n\u00e9ral</b>" + totalLigne + "</div>";
     if(last.record.total === "ABS" && last.record.absenceStatus){
       html += "<div class=\"bloc\"><b>Statut de l'absence</b>" + ABSENCE_LABELS[last.record.absenceStatus] + "</div>";
     }
 
     if(hist.length > 1){
-      html += "<h3>" + TXT.historique + " \u2014 " + escapeHtml(COMP_LABELS[code]) + "</h3>";
+      html += "<h3>" + TXT.historique + " \u2014 " + escapeHtml(COMP_LABELS[code]) + " (Prestation orale)</h3>";
       html += "<table><tr><th>Evaluation</th><th>Date</th><th>Note</th><th>Progression</th><th>Absence</th></tr>";
       var prevPct = null;
       for(var i=0; i<hist.length; i++){
         var item = hist[i];
-        var isAbs = (item.record.total === "ABS");
-        var totalCell = isAbs ? "ABS" : (item.record.total + " / " + item.record.maxTotal);
-        var absCell = (isAbs && item.record.absenceStatus) ? ABSENCE_LABELS[item.record.absenceStatus] : "";
+        var pv = getProgressionValue(item.record);
+        var isAbs = (pv.total === "ABS" || pv.total === null || pv.total === undefined);
+        var totalCell = isAbs ? (item.record.total === "ABS" ? "ABS" : "\u2014") : (pv.total + " / " + pv.maxTotal);
+        var absCell = (item.record.total === "ABS" && item.record.absenceStatus) ? ABSENCE_LABELS[item.record.absenceStatus] : "";
         var arrowTxt = "\u2014";
         if(!isAbs){
-          var pct = item.record.maxTotal > 0 ? (item.record.total / item.record.maxTotal) : 0;
+          var pct = pv.maxTotal > 0 ? (pv.total / pv.maxTotal) : 0;
           if(prevPct !== null){ var a = arrowSymbol(pct - prevPct); arrowTxt = a.symb; }
           prevPct = pct;
         }
