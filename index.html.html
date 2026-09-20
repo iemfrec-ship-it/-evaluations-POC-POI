@@ -123,6 +123,12 @@
   }
   .total-box span{font-size:14px; font-weight:400; display:block; opacity:.85;}
 
+  .cp-row{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:12px 0 4px;}
+  .cp-row label{margin:0; flex:1;}
+  .cp-btns{display:flex; gap:6px; flex:none;}
+  .btn-cp{background:#e9ecef; color:#333; border:none; padding:7px 10px; font-size:12px; font-weight:600; border-radius:8px; flex:none;}
+  .btn-cp.cp-flash{background:var(--vert); color:#fff;}
+
   #absenceStatusZone{background:#fff8f0; border:1px solid #f3d9b1; border-radius:10px; padding:10px;}
   .btn-abs-status{
     background:#fff; border:1.5px solid var(--bordure); padding:10px 8px; font-size:13px; font-weight:600;
@@ -209,9 +215,10 @@
   /* ---- IMPRESSION ---- */
   #printArea{display:none;}
   @media print{
+    @page{ margin:0; }
     body > *:not(#printArea){display:none !important;}
     #printArea{display:block !important;}
-    .page{page-break-after:always; padding:20px; font-family:Arial,sans-serif;}
+    .page{page-break-after:always; padding:18mm 14mm; font-family:Arial,sans-serif;}
     .page:last-child{page-break-after:auto;}
     .page h1{font-size:20px; border-bottom:2px solid #333; padding-bottom:6px;}
     .page h2{font-size:15px; color:#1d5fa8; margin-top:18px;}
@@ -344,16 +351,40 @@ Nom Prénom
           </div>
         </div>
 
-        <label>Point d'anglais à revoir</label>
+        <div class="cp-row">
+          <label>Point d'anglais à revoir</label>
+          <div class="cp-btns">
+            <button type="button" class="btn-cp" data-target="pointAnglaisInput" data-action="copy">📋 Copier</button>
+            <button type="button" class="btn-cp" data-target="pointAnglaisInput" data-action="paste">📥 Coller</button>
+          </div>
+        </div>
         <textarea id="pointAnglaisInput" placeholder="Point de langue prioritaire à retravailler..."></textarea>
 
-        <label>Appréciation générale</label>
+        <div class="cp-row">
+          <label>Appréciation générale</label>
+          <div class="cp-btns">
+            <button type="button" class="btn-cp" data-target="appreciationInput" data-action="copy">📋 Copier</button>
+            <button type="button" class="btn-cp" data-target="appreciationInput" data-action="paste">📥 Coller</button>
+          </div>
+        </div>
         <textarea id="appreciationInput" placeholder="Appréciation générale de la prestation..."></textarea>
 
-        <label>Conseils</label>
+        <div class="cp-row">
+          <label>Conseils</label>
+          <div class="cp-btns">
+            <button type="button" class="btn-cp" data-target="conseilsInput" data-action="copy">📋 Copier</button>
+            <button type="button" class="btn-cp" data-target="conseilsInput" data-action="paste">📥 Coller</button>
+          </div>
+        </div>
         <textarea id="conseilsInput" placeholder="Conseils donnés à l'élève..."></textarea>
 
-        <label>Recommandations de travail</label>
+        <div class="cp-row">
+          <label>Recommandations de travail</label>
+          <div class="cp-btns">
+            <button type="button" class="btn-cp" data-target="recommandationsInput" data-action="copy">📋 Copier</button>
+            <button type="button" class="btn-cp" data-target="recommandationsInput" data-action="paste">📥 Coller</button>
+          </div>
+        </div>
         <textarea id="recommandationsInput" placeholder="Pistes de travail pour progresser..."></textarea>
 
         <div class="row" style="margin-top:14px;">
@@ -446,6 +477,35 @@ var state = {
 };
 
 var idCounter = 0;
+var appClipboard = "";
+
+function handleCopyPasteClick(ev){
+  var btn = ev.currentTarget;
+  var targetId = btn.getAttribute("data-target");
+  var action = btn.getAttribute("data-action");
+  var field = document.getElementById(targetId);
+  if(!field){ return; }
+  if(action === "copy"){
+    appClipboard = field.value;
+    try{ navigator.clipboard.writeText(field.value); }catch(e){}
+    btn.classList.add("cp-flash");
+    setTimeout(function(){ btn.classList.remove("cp-flash"); }, 700);
+  }else{
+    if(appClipboard === ""){ return; }
+    var start = field.selectionStart;
+    var end = field.selectionEnd;
+    if(start === undefined || start === null){ start = field.value.length; end = field.value.length; }
+    var before = field.value.substring(0, start);
+    var after = field.value.substring(end);
+    field.value = before + appClipboard + after;
+    field.focus();
+    var newPos = start + appClipboard.length;
+    field.selectionStart = newPos;
+    field.selectionEnd = newPos;
+    btn.classList.add("cp-flash");
+    setTimeout(function(){ btn.classList.remove("cp-flash"); }, 700);
+  }
+}
 
 /* ---------- STOCKAGE ---------- */
 function loadDB(){
@@ -1350,7 +1410,7 @@ function buildStudentPageHTML(studentName){
     var last = hist[hist.length - 1];
     html += "<div class=\"bloc\"><b>" + TXT.derniereEval + "</b>" + escapeHtml(last.sessionTitle) + " \u2014 " + formatDateOnly(last.date) + "</div>";
 
-    html += "<table><tr><th>Critere</th><th>Points</th><th>Note</th></tr>";
+    html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
     for(var k=0; k<last.record.criteria.length; k++){
       var cr = last.record.criteria[k];
       html += "<tr><td>" + escapeHtml(cr.name) + "</td><td>" + cr.max + "</td><td>" + cr.score + "</td></tr>";
@@ -1451,6 +1511,11 @@ document.addEventListener("DOMContentLoaded", function(){
       state.currentAbsenceStatus = (state.currentAbsenceStatus === val) ? null : val;
       refreshAbsenceButtonsUI();
     });
+  }
+
+  var cpBtns = document.querySelectorAll(".btn-cp");
+  for(var cpI=0; cpI<cpBtns.length; cpI++){
+    cpBtns[cpI].addEventListener("click", handleCopyPasteClick);
   }
   document.getElementById("btnEnregistrerEval").addEventListener("click", function(){ saveEvaluation(false); });
   document.getElementById("btnEleveSuivant").addEventListener("click", function(){ saveEvaluation(true); });
