@@ -138,6 +138,14 @@
   .btn-cp{background:#e9ecef; color:#333; border:none; padding:7px 10px; font-size:12px; font-weight:600; border-radius:8px; flex:none;}
   .btn-cp.cp-flash{background:var(--vert); color:#fff;}
 
+  .preset-row{display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 8px 0;}
+  .btn-preset{background:#eef3fa; color:var(--bleu-fonce); border:1px solid #cfe0f2; padding:7px 11px; font-size:12px; font-weight:600; border-radius:16px; flex:none;}
+  .btn-preset.cp-flash{background:var(--vert); color:#fff; border-color:var(--vert);}
+
+  .radio-inline{display:flex; align-items:center; gap:6px; font-size:14px; font-weight:400; color:var(--texte); flex:1;}
+  .radio-inline input[type=radio]{width:auto; -webkit-appearance:auto; appearance:auto; margin:0;}
+  .champ-verrouille{background:#f1f3f5 !important; color:var(--gris) !important;}
+
   #absenceStatusZone{background:#fff8f0; border:1px solid #f3d9b1; border-radius:10px; padding:10px;}
   .btn-abs-status{
     background:#fff; border:1.5px solid var(--bordure); padding:10px 8px; font-size:13px; font-weight:600;
@@ -312,6 +320,15 @@ Nom Prénom
           <option value="POI">Production orale en interaction</option>
           <option value="EE">Expression écrite</option>
         </select>
+        <label>Type de travail</label>
+        <div class="row">
+          <label class="radio-inline">
+            <input type="radio" name="nouvelleSessionMode" value="individuel" checked> Individuel
+          </label>
+          <label class="radio-inline">
+            <input type="radio" name="nouvelleSessionMode" value="groupe"> Groupe
+          </label>
+        </div>
         <button class="btn btn-vert btn-large" id="btnCreerSession" style="margin-top:12px;">Créer cette évaluation</button>
       </div>
     </div>
@@ -323,7 +340,10 @@ Nom Prénom
         <label>Titre de l'évaluation</label>
         <input type="text" id="evalSessionTitre" placeholder="Titre de l'évaluation">
         <label>Compétence</label>
-        <div><span class="chip-competence" id="evalSessionCompetenceLabel">—</span></div>
+        <div class="row">
+          <span class="chip-competence" id="evalSessionCompetenceLabel">—</span>
+          <span class="chip-competence" id="evalSessionModeLabel" style="background:#fff8f0; border-color:#f3d9b1; color:#b45309;">—</span>
+        </div>
       </div>
 
       <div class="carte">
@@ -335,8 +355,32 @@ Nom Prénom
         <p class="aide">Le barème est mémorisé pour cette classe et cette compétence et réutilisé pour vos prochaines évaluations.</p>
       </div>
 
+      <div class="carte hidden" id="carteGroupes">
+        <h2>Groupes de travail</h2>
+        <p class="aide">Composez les groupes : la note de travail préparatoire et l'appréciation générale seront communes à tous les membres.</p>
+        <div id="listeGroupes"></div>
+        <button class="btn btn-vert btn-large" id="btnNouveauGroupe" style="margin-top:10px;">+ Nouveau groupe</button>
+
+        <div id="editeurGroupe" class="hidden" style="margin-top:14px; border-top:1px solid var(--bordure); padding-top:14px;">
+          <label>Membres du groupe (touchez pour ajouter/retirer)</label>
+          <div id="chipsMembresGroupe" class="panel-eleves" style="max-height:220px;"></div>
+
+          <div id="groupePrepZone" style="margin-top:14px;"></div>
+          <div class="total-box hidden" id="groupeTotalBox">0/0<span>Sous-total travail préparatoire</span></div>
+
+          <label>Appréciation générale du groupe</label>
+          <textarea id="groupeAppreciationInput" placeholder="Appréciation commune à tous les membres du groupe..."></textarea>
+
+          <div class="row" style="margin-top:12px;">
+            <button class="btn btn-vert" id="btnSauverGroupe">Enregistrer le groupe</button>
+            <button class="btn btn-gris" id="btnAnnulerGroupe" style="flex:none;">Annuler</button>
+          </div>
+        </div>
+      </div>
+
       <div class="carte" id="carteEvalEleve">
         <h2>Élève évalué</h2>
+        <p class="aide hidden" id="groupeInfoLigne"></p>
         <div class="row" style="align-items:center;">
           <select id="eleveSelect" class="eleve-select"></select>
           <button class="btn btn-gris" id="btnElevesPanel" style="flex:none;">👥 Élèves</button>
@@ -404,6 +448,14 @@ Nom Prénom
             <button type="button" class="btn-cp" data-target="recommandationsInput" data-action="copy">📋 Copier</button>
             <button type="button" class="btn-cp" data-target="recommandationsInput" data-action="paste">📥 Coller</button>
           </div>
+        </div>
+        <div class="preset-row">
+          <button type="button" class="btn-preset" data-target="recommandationsInput" data-text="travailler les conjugaisons.">Conjugaisons</button>
+          <button type="button" class="btn-preset" data-target="recommandationsInput" data-text="travailler les verbes irréguliers.">Verbes irréguliers</button>
+          <button type="button" class="btn-preset" data-target="recommandationsInput" data-text="travailler les constructions de phrases.">Constructions de phrases</button>
+          <button type="button" class="btn-preset" data-target="recommandationsInput" data-text="BoostYourEnglish.">BoostYourEnglish</button>
+          <button type="button" class="btn-preset" data-target="recommandationsInput" data-text="Atelier des phrases.">Atelier des phrases</button>
+          <button type="button" class="btn-preset" data-target="recommandationsInput" data-text="IrregularVerbs.">IrregularVerbs</button>
         </div>
         <textarea id="recommandationsInput" placeholder="Pistes de travail pour progresser..."></textarea>
 
@@ -528,6 +580,31 @@ function handleCopyPasteClick(ev){
   }
 }
 
+function handlePresetClick(ev){
+  var btn = ev.currentTarget;
+  var targetId = btn.getAttribute("data-target");
+  var text = btn.getAttribute("data-text");
+  var field = document.getElementById(targetId);
+  if(!field){ return; }
+  var start = field.selectionStart;
+  var end = field.selectionEnd;
+  if(start === undefined || start === null){ start = field.value.length; end = field.value.length; }
+  var before = field.value.substring(0, start);
+  var after = field.value.substring(end);
+  var insertion = text;
+  var dernierChar = before.charAt(before.length - 1);
+  if(before.length > 0 && dernierChar !== " " && dernierChar !== "\n"){
+    insertion = " " + insertion;
+  }
+  field.value = before + insertion + after;
+  field.focus();
+  var newPos = (before + insertion).length;
+  field.selectionStart = newPos;
+  field.selectionEnd = newPos;
+  btn.classList.add("cp-flash");
+  setTimeout(function(){ btn.classList.remove("cp-flash"); }, 700);
+}
+
 /* ---------- STOCKAGE ---------- */
 function loadDB(){
   var raw = null;
@@ -613,6 +690,8 @@ function migrateClass(cls){
   for(var si=0; si<cls.sessions.length; si++){
     var s = cls.sessions[si];
     if(!s.createdAt){ s.createdAt = (s.date ? s.date : todayISO()) + "T00:00:00.000Z"; }
+    if(!s.mode){ s.mode = "individuel"; }
+    if(!s.groups){ s.groups = []; }
     for(var stName in s.records){
       if(s.records.hasOwnProperty(stName) && !s.records[stName].date){
         s.records[stName].date = s.date || todayISO();
@@ -1011,17 +1090,24 @@ function createSession(){
   if(!state.currentClass){ return; }
   var titre = document.getElementById("nouvelleSessionTitre").value.replace(/^\s+|\s+$/g,"");
   var comp = document.getElementById("nouvelleSessionCompetence").value;
+  var modeRadios = document.getElementsByName("nouvelleSessionMode");
+  var mode = "individuel";
+  for(var r=0; r<modeRadios.length; r++){
+    if(modeRadios[r].checked){ mode = modeRadios[r].value; break; }
+  }
   if(titre === ""){ alert("Merci de donner un titre a cette evaluation."); return; }
   var cls = state.db.classes[state.currentClass];
   var template = cls.templates[comp];
-  var criteria = (template && template.length > 0) ? JSON.parse(JSON.stringify(template)) : [{ name:"", max:5 }];
+  var criteria = (template && template.length > 0) ? JSON.parse(JSON.stringify(template)) : [{ name:"", max:5, group:"oral" }];
   var session = {
     id: genId(),
     title: titre,
     competence: comp,
+    mode: mode,
     criteria: criteria,
     createdAt: new Date().toISOString(),
-    records: {}
+    records: {},
+    groups: []
   };
   cls.sessions.push(session);
   saveDB();
@@ -1051,10 +1137,238 @@ function openSession(id){
   document.getElementById("fab").classList.remove("hidden");
   document.getElementById("evalSessionTitre").value = session.title;
   document.getElementById("evalSessionCompetenceLabel").textContent = COMP_LABELS[session.competence];
+  document.getElementById("evalSessionModeLabel").textContent = (session.mode === "groupe") ? "Travail de groupe" : "Travail individuel";
+  document.getElementById("carteGroupes").classList.toggle("hidden", session.mode !== "groupe");
+  document.getElementById("editeurGroupe").classList.add("hidden");
   document.getElementById("panelEleves").classList.add("hidden");
   renderCriteriaEditor();
+  if(session.mode === "groupe"){ renderGroupesList(); }
   renderStudentSelectorForSession();
   window.scrollTo(0,0);
+}
+
+function findGroupForStudent(session, studentName){
+  for(var i=0; i<session.groups.length; i++){
+    if(session.groups[i].members.indexOf(studentName) >= 0){ return session.groups[i]; }
+  }
+  return null;
+}
+
+/* ---------- GROUPES DE TRAVAIL ---------- */
+var editingGroupId = null;
+var groupeDraftMembers = [];
+
+function renderGroupesList(){
+  var session = findSession(state.currentSessionId);
+  var zone = document.getElementById("listeGroupes");
+  if(!session || !session.groups || session.groups.length === 0){
+    zone.innerHTML = "<p class=\"aide\">Aucun groupe cree pour le moment.</p>";
+    return;
+  }
+  var html = "";
+  for(var i=0; i<session.groups.length; i++){
+    var g = session.groups[i];
+    html += "<div class=\"session-ligne\">";
+    html += "<div class=\"session-info\">";
+    html += "<div class=\"session-titre\">" + escapeHtml(g.members.join(", ")) + "</div>";
+    html += "<div class=\"session-meta\">" + g.members.length + " " + TXT.eleves + "</div>";
+    html += "</div>";
+    html += "<button class=\"btnOuvrirSession\" data-id=\"" + g.id + "\">Modifier</button>";
+    html += "<button class=\"session-sup\" data-id=\"" + g.id + "\" title=\"Supprimer ce groupe\">\u2715</button>";
+    html += "</div>";
+  }
+  zone.innerHTML = html;
+  var ouvrirBtns = zone.querySelectorAll(".btnOuvrirSession");
+  for(var j=0; j<ouvrirBtns.length; j++){
+    ouvrirBtns[j].addEventListener("click", function(ev){
+      ouvrirEditeurGroupe(ev.currentTarget.getAttribute("data-id"));
+    });
+  }
+  var supBtns = zone.querySelectorAll(".session-sup");
+  for(var k=0; k<supBtns.length; k++){
+    supBtns[k].addEventListener("click", function(ev){
+      supprimerGroupe(ev.currentTarget.getAttribute("data-id"));
+    });
+  }
+}
+
+function ouvrirNouveauGroupe(){
+  editingGroupId = null;
+  groupeDraftMembers = [];
+  document.getElementById("groupeAppreciationInput").value = "";
+  document.getElementById("editeurGroupe").classList.remove("hidden");
+  renderChipsMembresGroupe();
+  renderGroupePrepZone(null);
+  window.scrollTo(0,0);
+}
+
+function ouvrirEditeurGroupe(groupId){
+  var session = findSession(state.currentSessionId);
+  var g = null;
+  for(var i=0; i<session.groups.length; i++){
+    if(session.groups[i].id === groupId){ g = session.groups[i]; break; }
+  }
+  if(!g){ return; }
+  editingGroupId = groupId;
+  groupeDraftMembers = g.members.slice();
+  document.getElementById("groupeAppreciationInput").value = g.appreciation || "";
+  document.getElementById("editeurGroupe").classList.remove("hidden");
+  renderChipsMembresGroupe();
+  renderGroupePrepZone(g);
+  window.scrollTo(0,0);
+}
+
+function annulerEditeurGroupe(){
+  editingGroupId = null;
+  groupeDraftMembers = [];
+  document.getElementById("editeurGroupe").classList.add("hidden");
+}
+
+function renderChipsMembresGroupe(){
+  var zone = document.getElementById("chipsMembresGroupe");
+  var cls = state.db.classes[state.currentClass];
+  var session = findSession(state.currentSessionId);
+  var html = "";
+  for(var i=0; i<cls.students.length; i++){
+    var nom = cls.students[i];
+    var dansGroupeActuel = (groupeDraftMembers.indexOf(nom) >= 0);
+    var autreGroupe = null;
+    for(var j=0; j<session.groups.length; j++){
+      if(session.groups[j].id !== editingGroupId && session.groups[j].members.indexOf(nom) >= 0){ autreGroupe = session.groups[j]; break; }
+    }
+    var label = escapeHtml(nom) + ((autreGroupe && !dansGroupeActuel) ? " (dans un autre groupe)" : "");
+    html += "<button class=\"eleve-panel-item" + (dansGroupeActuel ? " actif" : "") + "\" data-nom=\"" + escapeHtml(nom) + "\"><span>" + label + "</span>" + (dansGroupeActuel ? "<span class=\"statut statut-fait\">\u2713</span>" : "") + "</button>";
+  }
+  zone.innerHTML = html || "<p class=\"aide\">Aucun eleve dans cette classe.</p>";
+  var items = zone.querySelectorAll(".eleve-panel-item");
+  for(var k=0; k<items.length; k++){
+    items[k].addEventListener("click", function(ev){
+      var nom = ev.currentTarget.getAttribute("data-nom");
+      var idx = groupeDraftMembers.indexOf(nom);
+      if(idx >= 0){ groupeDraftMembers.splice(idx,1); }
+      else{ groupeDraftMembers.push(nom); }
+      renderChipsMembresGroupe();
+    });
+  }
+}
+
+function renderGroupePrepZone(existingGroup){
+  var session = findSession(state.currentSessionId);
+  var zone = document.getElementById("groupePrepZone");
+  var prepCriteria = [];
+  for(var i=0; i<session.criteria.length; i++){
+    if(session.criteria[i].group === "prep"){ prepCriteria.push(session.criteria[i]); }
+  }
+  if(prepCriteria.length === 0){
+    zone.innerHTML = "<p class=\"aide\">Aucun critere de travail preparatoire defini dans le bareme de cette evaluation.</p>";
+    document.getElementById("groupeTotalBox").classList.add("hidden");
+    return;
+  }
+  var html = "";
+  for(var j=0; j<prepCriteria.length; j++){
+    var c = prepCriteria[j];
+    var valeur = "";
+    if(existingGroup && existingGroup.prepScores){
+      for(var k=0; k<existingGroup.prepScores.length; k++){
+        if(existingGroup.prepScores[k].name === c.name){ valeur = existingGroup.prepScores[k].score; break; }
+      }
+    }
+    html += "<div class=\"score-ligne\">";
+    html += "<div class=\"nom\">" + escapeHtml(c.name) + "<small>sur " + c.max + " point(s)</small></div>";
+    html += "<input type=\"text\" class=\"groupeScoreInput\" data-nom=\"" + escapeHtml(c.name) + "\" data-max=\"" + c.max + "\" placeholder=\"0-" + c.max + " ou ABS\" value=\"" + escapeHtml(valeur) + "\">";
+    html += "</div>";
+  }
+  zone.innerHTML = html;
+  document.getElementById("groupeTotalBox").classList.remove("hidden");
+  var inputs = zone.querySelectorAll(".groupeScoreInput");
+  for(var n=0; n<inputs.length; n++){
+    inputs[n].addEventListener("input", updateGroupeTotal);
+  }
+  updateGroupeTotal();
+}
+
+function updateGroupeTotal(){
+  var inputs = document.querySelectorAll(".groupeScoreInput");
+  var total = 0, maxc = 0, hasNum = false, absCount = 0;
+  for(var i=0; i<inputs.length; i++){
+    var max = parseFloat(inputs[i].getAttribute("data-max")) || 0;
+    var v = normalizeScoreValue(inputs[i].value);
+    if(v === "ABS"){ absCount++; }
+    else{ hasNum = true; if(v !== ""){ total += v; } maxc += max; }
+  }
+  var box = document.getElementById("groupeTotalBox");
+  if(!hasNum && absCount > 0){
+    box.innerHTML = "ABS<span>Sous-total travail pr\u00e9paratoire</span>";
+  }else{
+    box.innerHTML = round1(total) + " / " + round1(maxc) + "<span>Sous-total travail pr\u00e9paratoire</span>";
+  }
+}
+
+function collectGroupeScores(){
+  var inputs = document.querySelectorAll(".groupeScoreInput");
+  var scores = [];
+  var total = 0, maxc = 0, hasNum = false;
+  for(var i=0; i<inputs.length; i++){
+    var nom = inputs[i].getAttribute("data-nom");
+    var max = parseFloat(inputs[i].getAttribute("data-max")) || 0;
+    var v = normalizeScoreValue(inputs[i].value);
+    var scoreVal;
+    if(v === "ABS"){ scoreVal = "ABS"; }
+    else{ scoreVal = (v === "") ? 0 : v; hasNum = true; total += scoreVal; maxc += max; }
+    scores.push({ name: nom, max: max, score: scoreVal });
+  }
+  var totalOut = hasNum ? round1(total) : (scores.length > 0 ? "ABS" : null);
+  var maxOut = hasNum ? round1(maxc) : 0;
+  return { scores: scores, total: totalOut, maxTotal: maxOut };
+}
+
+function sauvegarderGroupe(){
+  if(groupeDraftMembers.length === 0){ alert("Selectionnez au moins un eleve pour ce groupe."); return; }
+  var session = findSession(state.currentSessionId);
+  var data = collectGroupeScores();
+  var appreciation = document.getElementById("groupeAppreciationInput").value;
+  var groupObj = null;
+  if(editingGroupId){
+    for(var i=0; i<session.groups.length; i++){
+      if(session.groups[i].id === editingGroupId){ groupObj = session.groups[i]; break; }
+    }
+  }
+  if(!groupObj){
+    groupObj = { id: genId() };
+    session.groups.push(groupObj);
+  }
+  groupObj.members = groupeDraftMembers.slice();
+  groupObj.prepScores = data.scores;
+  groupObj.prepTotal = data.total;
+  groupObj.prepMaxTotal = data.maxTotal;
+  groupObj.appreciation = appreciation;
+
+  for(var j=0; j<session.groups.length; j++){
+    if(session.groups[j].id !== groupObj.id){
+      var membres = session.groups[j].members;
+      for(var m=membres.length - 1; m >= 0; m--){
+        if(groupeDraftMembers.indexOf(membres[m]) >= 0){ membres.splice(m,1); }
+      }
+    }
+  }
+
+  saveDB();
+  annulerEditeurGroupe();
+  renderGroupesList();
+  if(!document.getElementById("panelEleves").classList.contains("hidden")){ renderElevesPanel(); }
+  onStudentChange();
+}
+
+function supprimerGroupe(groupId){
+  var ok = confirm("Supprimer ce groupe ? Les eleves concernes ne seront plus rattaches a un groupe.");
+  if(!ok){ return; }
+  var session = findSession(state.currentSessionId);
+  for(var i=0; i<session.groups.length; i++){
+    if(session.groups[i].id === groupId){ session.groups.splice(i,1); break; }
+  }
+  saveDB();
+  renderGroupesList();
+  onStudentChange();
 }
 
 function openSessionAndSelectStudent(sessionId, studentName){
@@ -1181,7 +1495,29 @@ function onStudentChange(){
   state.currentAbsenceStatus = rec && rec.absenceStatus ? rec.absenceStatus : null;
   renderScoreInputs(rec);
   document.getElementById("pointAnglaisInput").value = rec ? (rec.pointAnglais || "") : "";
-  document.getElementById("appreciationInput").value = rec ? (rec.appreciation || "") : "";
+
+  var appreciationField = document.getElementById("appreciationInput");
+  var groupeInfoLigne = document.getElementById("groupeInfoLigne");
+  var groupInfo = (session && session.mode === "groupe" && state.currentStudent) ? findGroupForStudent(session, state.currentStudent) : null;
+  appreciationField.removeAttribute("readonly");
+  appreciationField.classList.remove("champ-verrouille");
+  if(rec && rec.appreciation){
+    appreciationField.value = rec.appreciation;
+  }else if(groupInfo){
+    appreciationField.value = groupInfo.appreciation || "";
+  }else{
+    appreciationField.value = "";
+  }
+  if(groupInfo){
+    groupeInfoLigne.textContent = "Groupe : " + groupInfo.members.join(", ") + " — appreciation preremplie a partir du groupe, modifiable individuellement.";
+    groupeInfoLigne.classList.remove("hidden");
+  }else if(session && session.mode === "groupe"){
+    groupeInfoLigne.textContent = "Cet eleve n'est rattache a aucun groupe pour l'instant.";
+    groupeInfoLigne.classList.remove("hidden");
+  }else{
+    groupeInfoLigne.classList.add("hidden");
+  }
+
   document.getElementById("conseilsInput").value = rec ? (rec.conseils || "") : "";
   document.getElementById("recommandationsInput").value = rec ? (rec.recommandations || "") : "";
   renderHistorique();
@@ -1192,6 +1528,8 @@ function onStudentChange(){
 
 function renderScoreInputs(existingRecord){
   var zone = document.getElementById("scoresZone");
+  var session = findSession(state.currentSessionId);
+  var isGroupMode = !!(session && session.mode === "groupe");
   var groupes = { prep: [], oral: [] };
   for(var i=0; i<state.currentCriteria.length; i++){
     var c = state.currentCriteria[i];
@@ -1199,11 +1537,11 @@ function renderScoreInputs(existingRecord){
     groupes[grp].push(i);
   }
   var html = "";
-  if(groupes.prep.length > 0){
+  if(!isGroupMode && groupes.prep.length > 0){
     html += "<h3 class=\"souscarte\">1. Travail préparatoire</h3>";
     html += buildScoreRowsHtml(groupes.prep, existingRecord);
   }
-  html += "<h3 class=\"souscarte\">" + (groupes.prep.length > 0 ? "2. " : "") + "Prestation orale</h3>";
+  html += "<h3 class=\"souscarte\">" + (!isGroupMode && groupes.prep.length > 0 ? "2. " : "") + "Prestation orale</h3>";
   html += buildScoreRowsHtml(groupes.oral, existingRecord);
   zone.innerHTML = html;
   var inputs = zone.querySelectorAll(".scoreInput");
@@ -1246,12 +1584,18 @@ function normalizeScoreValue(raw){
 
 function computeScoreBreakdown(){
   var inputs = document.querySelectorAll(".scoreInput");
+  var session = findSession(state.currentSessionId);
+  var isGroupMode = !!(session && session.mode === "groupe");
   var total = 0, maxCounted = 0, absCount = 0, hasNumeric = false;
   var prep = { total:0, max:0, hasNum:false, any:false };
   var oral = { total:0, max:0, hasNum:false, any:false };
-  for(var g=0; g<state.currentCriteria.length; g++){
-    if(state.currentCriteria[g].group === "prep"){ prep.any = true; }
-    else{ oral.any = true; }
+  if(!isGroupMode){
+    for(var g=0; g<state.currentCriteria.length; g++){
+      if(state.currentCriteria[g].group === "prep"){ prep.any = true; }
+      else{ oral.any = true; }
+    }
+  }else{
+    oral.any = true;
   }
   for(var j=0; j<inputs.length; j++){
     var idx = parseInt(inputs[j].getAttribute("data-idx"), 10);
@@ -1312,15 +1656,21 @@ function refreshAbsenceButtonsUI(){
 
 function collectCurrentScores(){
   var inputs = document.querySelectorAll(".scoreInput");
+  var session = findSession(state.currentSessionId);
+  var isGroupMode = !!(session && session.mode === "groupe");
   var criteria = [];
   var total = 0;
   var maxCounted = 0;
   var hasNumeric = false;
   var prep = { total:0, max:0, hasNum:false, any:false };
   var oral = { total:0, max:0, hasNum:false, any:false };
-  for(var g=0; g<state.currentCriteria.length; g++){
-    if(state.currentCriteria[g].group === "prep"){ prep.any = true; }
-    else{ oral.any = true; }
+  if(!isGroupMode){
+    for(var g=0; g<state.currentCriteria.length; g++){
+      if(state.currentCriteria[g].group === "prep"){ prep.any = true; }
+      else{ oral.any = true; }
+    }
+  }else{
+    oral.any = true;
   }
   for(var i=0; i<inputs.length; i++){
     var idx = parseInt(inputs[i].getAttribute("data-idx"), 10);
@@ -1546,6 +1896,8 @@ function buildStudentPageHTML(studentName, sessionId){
 
   html += "<div class=\"bloc\"><b>Date de passage</b>" + formatDateOnly(rec.date) + "</div>";
 
+  var groupInfo = (session.mode === "groupe") ? findGroupForStudent(session, studentName) : null;
+
   var critPrep = [];
   var critOral = [];
   for(var k=0; k<rec.criteria.length; k++){
@@ -1553,28 +1905,62 @@ function buildStudentPageHTML(studentName, sessionId){
     if(cr.group === "prep"){ critPrep.push(cr); }else{ critOral.push(cr); }
   }
 
-  if(critPrep.length > 0){
-    html += "<h3>1. Travail pr\u00e9paratoire</h3>";
+  var totalNum = 0, maxNum = 0, anyNum = false;
+
+  if(session.mode === "groupe"){
+    if(groupInfo){
+      html += "<div class=\"bloc\"><b>Groupe</b>" + escapeHtml(groupInfo.members.join(", ")) + "</div>";
+      if(groupInfo.prepScores && groupInfo.prepScores.length > 0){
+        html += "<h3>1. Travail pr\u00e9paratoire (commun au groupe)</h3>";
+        html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
+        for(var gp=0; gp<groupInfo.prepScores.length; gp++){
+          html += "<tr><td>" + escapeHtml(groupInfo.prepScores[gp].name) + "</td><td>" + groupInfo.prepScores[gp].max + "</td><td>" + groupInfo.prepScores[gp].score + "</td></tr>";
+        }
+        html += "</table>";
+        var grpPrepLigne = (groupInfo.prepTotal === "ABS" || groupInfo.prepTotal === null || groupInfo.prepTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + groupInfo.prepTotal + " / " + groupInfo.prepMaxTotal);
+        html += "<div class=\"totalPrint\">" + grpPrepLigne + "</div>";
+        if(typeof groupInfo.prepTotal === "number"){ totalNum += groupInfo.prepTotal; maxNum += groupInfo.prepMaxTotal; anyNum = true; }
+      }
+    }else{
+      html += "<div class=\"bloc\">\u00c9l\u00e8ve non rattach\u00e9 \u00e0 un groupe pour cette evaluation.</div>";
+    }
+
+    html += "<h3>" + (groupInfo && groupInfo.prepScores && groupInfo.prepScores.length > 0 ? "2. " : "") + "Prestation orale (individuelle)</h3>";
     html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
-    for(var p=0; p<critPrep.length; p++){
-      html += "<tr><td>" + escapeHtml(critPrep[p].name) + "</td><td>" + critPrep[p].max + "</td><td>" + critPrep[p].score + "</td></tr>";
+    for(var o2=0; o2<critOral.length; o2++){
+      html += "<tr><td>" + escapeHtml(critOral[o2].name) + "</td><td>" + critOral[o2].max + "</td><td>" + critOral[o2].score + "</td></tr>";
     }
     html += "</table>";
-    var prepLigne = (rec.prepTotal === "ABS" || rec.prepTotal === null || rec.prepTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + rec.prepTotal + " / " + rec.prepMaxTotal);
-    html += "<div class=\"totalPrint\">" + prepLigne + "</div>";
-  }
+    var oralLigne2 = (rec.oralTotal === "ABS" || rec.oralTotal === null || rec.oralTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + rec.oralTotal + " / " + rec.oralMaxTotal);
+    html += "<div class=\"totalPrint\">" + oralLigne2 + "</div>";
+    if(typeof rec.oralTotal === "number"){ totalNum += rec.oralTotal; maxNum += rec.oralMaxTotal; anyNum = true; }
 
-  html += "<h3>" + (critPrep.length > 0 ? "2. " : "") + "Prestation orale</h3>";
-  html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
-  for(var o=0; o<critOral.length; o++){
-    html += "<tr><td>" + escapeHtml(critOral[o].name) + "</td><td>" + critOral[o].max + "</td><td>" + critOral[o].score + "</td></tr>";
-  }
-  html += "</table>";
-  var oralLigne = (rec.oralTotal === "ABS" || rec.oralTotal === null || rec.oralTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + rec.oralTotal + " / " + rec.oralMaxTotal);
-  html += "<div class=\"totalPrint\">" + oralLigne + "</div>";
+    var totalLigneGrp = anyNum ? ("Total : " + round1(totalNum) + " / " + round1(maxNum)) : "Total : ABS";
+    html += "<div class=\"bloc\"><b>Total g\u00e9n\u00e9ral</b>" + totalLigneGrp + "</div>";
+  }else{
+    if(critPrep.length > 0){
+      html += "<h3>1. Travail pr\u00e9paratoire</h3>";
+      html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
+      for(var p=0; p<critPrep.length; p++){
+        html += "<tr><td>" + escapeHtml(critPrep[p].name) + "</td><td>" + critPrep[p].max + "</td><td>" + critPrep[p].score + "</td></tr>";
+      }
+      html += "</table>";
+      var prepLigne = (rec.prepTotal === "ABS" || rec.prepTotal === null || rec.prepTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + rec.prepTotal + " / " + rec.prepMaxTotal);
+      html += "<div class=\"totalPrint\">" + prepLigne + "</div>";
+    }
 
-  var totalLigne = (rec.total === "ABS") ? "Total : ABS" : ("Total : " + rec.total + " / " + rec.maxTotal);
-  html += "<div class=\"bloc\"><b>Total g\u00e9n\u00e9ral</b>" + totalLigne + "</div>";
+    html += "<h3>" + (critPrep.length > 0 ? "2. " : "") + "Prestation orale</h3>";
+    html += "<table><tr><th>Critere</th><th>Bareme</th><th>Note</th></tr>";
+    for(var o=0; o<critOral.length; o++){
+      html += "<tr><td>" + escapeHtml(critOral[o].name) + "</td><td>" + critOral[o].max + "</td><td>" + critOral[o].score + "</td></tr>";
+    }
+    html += "</table>";
+    var oralLigne = (rec.oralTotal === "ABS" || rec.oralTotal === null || rec.oralTotal === undefined) ? "Sous-total : ABS" : ("Sous-total : " + rec.oralTotal + " / " + rec.oralMaxTotal);
+    html += "<div class=\"totalPrint\">" + oralLigne + "</div>";
+
+    var totalLigne = (rec.total === "ABS") ? "Total : ABS" : ("Total : " + rec.total + " / " + rec.maxTotal);
+    html += "<div class=\"bloc\"><b>Total g\u00e9n\u00e9ral</b>" + totalLigne + "</div>";
+  }
   if(rec.total === "ABS" && rec.absenceStatus){
     html += "<div class=\"bloc\"><b>Statut de l'absence</b>" + ABSENCE_LABELS[rec.absenceStatus] + "</div>";
   }
@@ -1676,6 +2062,10 @@ document.addEventListener("DOMContentLoaded", function(){
   document.getElementById("btnAjouterCritere").addEventListener("click", addCriterionRow);
   document.getElementById("btnValiderBareme").addEventListener("click", validateBareme);
 
+  document.getElementById("btnNouveauGroupe").addEventListener("click", ouvrirNouveauGroupe);
+  document.getElementById("btnSauverGroupe").addEventListener("click", sauvegarderGroupe);
+  document.getElementById("btnAnnulerGroupe").addEventListener("click", annulerEditeurGroupe);
+
   document.getElementById("eleveSelect").addEventListener("change", onStudentChange);
   document.getElementById("btnElevesPanel").addEventListener("click", toggleElevesPanel);
 
@@ -1691,6 +2081,11 @@ document.addEventListener("DOMContentLoaded", function(){
   var cpBtns = document.querySelectorAll(".btn-cp");
   for(var cpI=0; cpI<cpBtns.length; cpI++){
     cpBtns[cpI].addEventListener("click", handleCopyPasteClick);
+  }
+
+  var presetBtns = document.querySelectorAll(".btn-preset");
+  for(var prI=0; prI<presetBtns.length; prI++){
+    presetBtns[prI].addEventListener("click", handlePresetClick);
   }
   document.getElementById("btnEnregistrerEval").addEventListener("click", function(){ saveEvaluation(false); });
   document.getElementById("btnEleveSuivant").addEventListener("click", function(){ saveEvaluation(true); });
