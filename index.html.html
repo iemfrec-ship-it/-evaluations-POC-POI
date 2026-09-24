@@ -146,6 +146,8 @@
   .radio-inline input[type=radio]{width:auto; -webkit-appearance:auto; appearance:auto; margin:0;}
   .champ-verrouille{background:#f1f3f5 !important; color:var(--gris) !important;}
 
+  .lien-outil{display:inline-block; margin:4px 0 12px 0; font-size:12px; color:var(--bleu); text-decoration:underline;}
+
   #absenceStatusZone{background:#fff8f0; border:1px solid #f3d9b1; border-radius:10px; padding:10px;}
   .btn-abs-status{
     background:#fff; border:1.5px solid var(--bordure); padding:10px 8px; font-size:13px; font-weight:600;
@@ -429,6 +431,16 @@ Nom Prénom
           </div>
         </div>
         <textarea id="pointAnglaisInput" placeholder="Point de langue prioritaire à retravailler..."></textarea>
+
+        <div class="cp-row">
+          <label>Prononciation à revoir</label>
+          <div class="cp-btns">
+            <button type="button" class="btn-cp" data-target="prononciationInput" data-action="copy">📋 Copier</button>
+            <button type="button" class="btn-cp" data-target="prononciationInput" data-action="paste">📥 Coller</button>
+          </div>
+        </div>
+        <textarea id="prononciationInput" placeholder="Son(s) ou mot(s) à retravailler..."></textarea>
+        <a href="https://www.deepl.com/translator" target="_blank" rel="noopener" class="lien-outil">🔊 Écouter la prononciation sur DeepL</a>
 
         <div id="appreciationIndividuelleZone">
           <div class="cp-row">
@@ -1574,6 +1586,7 @@ function onStudentChange(){
   state.currentAbsenceStatus = rec && rec.absenceStatus ? rec.absenceStatus : null;
   renderScoreInputs(rec);
   document.getElementById("pointAnglaisInput").value = rec ? (rec.pointAnglais || "") : "";
+  document.getElementById("prononciationInput").value = rec ? (rec.prononciation || "") : "";
 
   if(!(session && session.mode === "groupe")){
     document.getElementById("appreciationInput").value = rec ? (rec.appreciation || "") : "";
@@ -1790,6 +1803,7 @@ function saveEvaluation(advanceToNext){
     oralMaxTotal: data.oralMaxTotal,
     absenceStatus: state.currentAbsenceStatus,
     pointAnglais: document.getElementById("pointAnglaisInput").value,
+    prononciation: document.getElementById("prononciationInput").value,
     appreciation: isGroupMode ? "" : document.getElementById("appreciationInput").value,
     conseils: document.getElementById("conseilsInput").value,
     recommandations: document.getElementById("recommandationsInput").value,
@@ -2070,6 +2084,7 @@ function buildStudentPageHTML(studentName, sessionId){
   }
 
   html += "<div class=\"bloc\"><b>" + TXT.pointAnglais + "</b>" + nl2br(rec.pointAnglais) + "</div>";
+  html += "<div class=\"bloc\"><b>Prononciation \u00e0 revoir</b>" + nl2br(rec.prononciation) + "</div>";
   html += "<div class=\"bloc\"><b>" + TXT.Appreciation + " " + TXT.generale + "</b>" + nl2br(groupInfo ? groupInfo.appreciation : rec.appreciation) + "</div>";
   html += "<div class=\"bloc\"><b>Conseils</b>" + nl2br(rec.conseils) + "</div>";
   html += "<div class=\"bloc\"><b>Recommandations de travail</b>" + nl2br(rec.recommandations) + "</div>";
