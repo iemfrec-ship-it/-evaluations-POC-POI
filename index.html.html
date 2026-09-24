@@ -357,30 +357,36 @@ Nom Prénom
 
       <div class="carte hidden" id="carteGroupes">
         <h2>Groupes de travail</h2>
-        <p class="aide">Composez les groupes : la note de travail préparatoire et l'appréciation générale seront communes à tous les membres.</p>
+        <p class="aide">Constituez vos groupes à l'avance : touchez les prénoms pour composer chaque groupe, puis cliquez sur « Évaluer » pour noter le groupe (partie commune + partie individuelle).</p>
         <div id="listeGroupes"></div>
         <button class="btn btn-vert btn-large" id="btnNouveauGroupe" style="margin-top:10px;">+ Nouveau groupe</button>
 
         <div id="editeurGroupe" class="hidden" style="margin-top:14px; border-top:1px solid var(--bordure); padding-top:14px;">
           <label>Membres du groupe (touchez pour ajouter/retirer)</label>
           <div id="chipsMembresGroupe" class="panel-eleves" style="max-height:220px;"></div>
-
-          <div id="groupePrepZone" style="margin-top:14px;"></div>
-          <div class="total-box hidden" id="groupeTotalBox">0/0<span>Sous-total travail préparatoire</span></div>
-
-          <label>Appréciation générale du groupe</label>
-          <textarea id="groupeAppreciationInput" placeholder="Appréciation commune à tous les membres du groupe..."></textarea>
-
           <div class="row" style="margin-top:12px;">
-            <button class="btn btn-vert" id="btnSauverGroupe">Enregistrer le groupe</button>
+            <button class="btn btn-vert" id="btnSauverGroupe">Enregistrer la composition</button>
             <button class="btn btn-gris" id="btnAnnulerGroupe" style="flex:none;">Annuler</button>
           </div>
         </div>
       </div>
 
+      <div class="carte hidden" id="carteGroupeActif">
+        <div class="row" style="align-items:center; justify-content:space-between;">
+          <h2 style="margin:0;">Groupe en cours d'évaluation</h2>
+          <button class="btn btn-gris" id="btnQuitterGroupeActif" style="flex:none;">Changer de groupe</button>
+        </div>
+        <p class="aide" id="groupeActifTitre"></p>
+        <h3 class="souscarte">Travail préparatoire (commun au groupe)</h3>
+        <div id="groupeActifPrepZone"></div>
+        <div class="total-box hidden" id="groupeActifTotalBox">0/0<span>Sous-total travail préparatoire</span></div>
+        <button class="btn btn-bleu btn-large" id="btnSauverPrepGroupeActif" style="margin-top:10px;">Enregistrer le travail préparatoire du groupe</button>
+      </div>
+
+      <p class="aide hidden" id="messageChoisirGroupe">Sélectionnez ou créez un groupe ci-dessus, puis cliquez sur « Évaluer » pour commencer la saisie.</p>
+
       <div class="carte" id="carteEvalEleve">
-        <h2>Élève évalué</h2>
-        <p class="aide hidden" id="groupeInfoLigne"></p>
+        <h2 id="titreCarteEvalEleve">Élève évalué</h2>
         <div class="row" style="align-items:center;">
           <select id="eleveSelect" class="eleve-select"></select>
           <button class="btn btn-gris" id="btnElevesPanel" style="flex:none;">👥 Élèves</button>
@@ -424,14 +430,16 @@ Nom Prénom
         </div>
         <textarea id="pointAnglaisInput" placeholder="Point de langue prioritaire à retravailler..."></textarea>
 
-        <div class="cp-row">
-          <label>Appréciation générale</label>
-          <div class="cp-btns">
-            <button type="button" class="btn-cp" data-target="appreciationInput" data-action="copy">📋 Copier</button>
-            <button type="button" class="btn-cp" data-target="appreciationInput" data-action="paste">📥 Coller</button>
+        <div id="appreciationIndividuelleZone">
+          <div class="cp-row">
+            <label>Appréciation générale</label>
+            <div class="cp-btns">
+              <button type="button" class="btn-cp" data-target="appreciationInput" data-action="copy">📋 Copier</button>
+              <button type="button" class="btn-cp" data-target="appreciationInput" data-action="paste">📥 Coller</button>
+            </div>
           </div>
+          <textarea id="appreciationInput" placeholder="Appréciation générale de la prestation..."></textarea>
         </div>
-        <textarea id="appreciationInput" placeholder="Appréciation générale de la prestation..."></textarea>
 
         <div class="cp-row">
           <label>Conseils</label>
@@ -468,6 +476,13 @@ Nom Prénom
         <h2>Progression — historique de cette compétence</h2>
         <p class="aide">Seule la note de la Prestation orale est prise en compte pour les flèches de progression.</p>
         <div id="historiqueZone"><p class="aide">Aucune évaluation enregistrée pour l'instant.</p></div>
+      </div>
+
+      <div class="carte hidden" id="carteAppreciationGroupe">
+        <h2>Appréciation générale du groupe</h2>
+        <p class="aide">Une fois les élèves du groupe évalués, saisissez ici l'appréciation commune à tous les membres.</p>
+        <textarea id="groupeAppreciationFinaleInput" placeholder="Appréciation commune à tous les membres du groupe..."></textarea>
+        <button class="btn btn-vert btn-large" id="btnSauverAppreciationGroupe" style="margin-top:10px;">Enregistrer l'appréciation du groupe</button>
       </div>
 
     </div>
@@ -544,6 +559,7 @@ var state = {
   db: null,
   currentClass: null,
   currentSessionId: null,
+  currentGroupId: null,
   currentCriteria: [],
   currentStudent: null,
   currentAbsenceStatus: null
@@ -829,6 +845,7 @@ function deleteClass(nom){
 function resetToNoClassSelected(){
   state.currentClass = null;
   state.currentSessionId = null;
+  state.currentGroupId = null;
   document.getElementById("topClasseNom").textContent = TXT.aucuneClasse;
   document.getElementById("topbar").style.background = "";
   document.getElementById("carteEleves").classList.add("hidden");
@@ -852,6 +869,7 @@ function createClass(){
 function selectClass(nom){
   state.currentClass = nom;
   state.currentSessionId = null;
+  state.currentGroupId = null;
   ensureClass(nom);
   document.getElementById("topClasseNom").textContent = nom;
   document.getElementById("topbar").style.background = colorForClass(nom);
@@ -952,6 +970,7 @@ function ajouterUnEleve(){
 
 function changerDeClasse(){
   state.currentSessionId = null;
+  state.currentGroupId = null;
   document.getElementById("fab").classList.add("hidden");
   document.getElementById("view-eval").classList.add("hidden");
   document.getElementById("view-setup").classList.remove("hidden");
@@ -1131,6 +1150,7 @@ function openSession(id){
   var session = findSession(id);
   if(!session){ return; }
   state.currentSessionId = id;
+  state.currentGroupId = null;
   state.currentCriteria = session.criteria;
   document.getElementById("view-setup").classList.add("hidden");
   document.getElementById("view-eval").classList.remove("hidden");
@@ -1139,6 +1159,9 @@ function openSession(id){
   document.getElementById("evalSessionCompetenceLabel").textContent = COMP_LABELS[session.competence];
   document.getElementById("evalSessionModeLabel").textContent = (session.mode === "groupe") ? "Travail de groupe" : "Travail individuel";
   document.getElementById("carteGroupes").classList.toggle("hidden", session.mode !== "groupe");
+  document.getElementById("carteGroupeActif").classList.add("hidden");
+  document.getElementById("carteAppreciationGroupe").classList.add("hidden");
+  document.getElementById("appreciationIndividuelleZone").classList.toggle("hidden", session.mode === "groupe");
   document.getElementById("editeurGroupe").classList.add("hidden");
   document.getElementById("panelEleves").classList.add("hidden");
   renderCriteriaEditor();
@@ -1154,7 +1177,14 @@ function findGroupForStudent(session, studentName){
   return null;
 }
 
-/* ---------- GROUPES DE TRAVAIL ---------- */
+function findGroupById(session, groupId){
+  for(var i=0; i<session.groups.length; i++){
+    if(session.groups[i].id === groupId){ return session.groups[i]; }
+  }
+  return null;
+}
+
+/* ---------- GROUPES DE TRAVAIL : COMPOSITION ---------- */
 var editingGroupId = null;
 var groupeDraftMembers = [];
 
@@ -1168,16 +1198,24 @@ function renderGroupesList(){
   var html = "";
   for(var i=0; i<session.groups.length; i++){
     var g = session.groups[i];
-    html += "<div class=\"session-ligne\">";
+    var actif = (g.id === state.currentGroupId);
+    html += "<div class=\"session-ligne" + (actif ? " hist-actuelle" : "") + "\">";
     html += "<div class=\"session-info\">";
     html += "<div class=\"session-titre\">" + escapeHtml(g.members.join(", ")) + "</div>";
     html += "<div class=\"session-meta\">" + g.members.length + " " + TXT.eleves + "</div>";
     html += "</div>";
-    html += "<button class=\"btnOuvrirSession\" data-id=\"" + g.id + "\">Modifier</button>";
+    html += "<button class=\"btnEvaluerGroupe\" data-id=\"" + g.id + "\">Évaluer</button>";
+    html += "<button class=\"btnOuvrirSession\" data-id=\"" + g.id + "\">Composition</button>";
     html += "<button class=\"session-sup\" data-id=\"" + g.id + "\" title=\"Supprimer ce groupe\">\u2715</button>";
     html += "</div>";
   }
   zone.innerHTML = html;
+  var evalBtns = zone.querySelectorAll(".btnEvaluerGroupe");
+  for(var e=0; e<evalBtns.length; e++){
+    evalBtns[e].addEventListener("click", function(ev){
+      activerGroupePourEvaluation(ev.currentTarget.getAttribute("data-id"));
+    });
+  }
   var ouvrirBtns = zone.querySelectorAll(".btnOuvrirSession");
   for(var j=0; j<ouvrirBtns.length; j++){
     ouvrirBtns[j].addEventListener("click", function(ev){
@@ -1195,26 +1233,19 @@ function renderGroupesList(){
 function ouvrirNouveauGroupe(){
   editingGroupId = null;
   groupeDraftMembers = [];
-  document.getElementById("groupeAppreciationInput").value = "";
   document.getElementById("editeurGroupe").classList.remove("hidden");
   renderChipsMembresGroupe();
-  renderGroupePrepZone(null);
   window.scrollTo(0,0);
 }
 
 function ouvrirEditeurGroupe(groupId){
   var session = findSession(state.currentSessionId);
-  var g = null;
-  for(var i=0; i<session.groups.length; i++){
-    if(session.groups[i].id === groupId){ g = session.groups[i]; break; }
-  }
+  var g = findGroupById(session, groupId);
   if(!g){ return; }
   editingGroupId = groupId;
   groupeDraftMembers = g.members.slice();
-  document.getElementById("groupeAppreciationInput").value = g.appreciation || "";
   document.getElementById("editeurGroupe").classList.remove("hidden");
   renderChipsMembresGroupe();
-  renderGroupePrepZone(g);
   window.scrollTo(0,0);
 }
 
@@ -1252,96 +1283,15 @@ function renderChipsMembresGroupe(){
   }
 }
 
-function renderGroupePrepZone(existingGroup){
-  var session = findSession(state.currentSessionId);
-  var zone = document.getElementById("groupePrepZone");
-  var prepCriteria = [];
-  for(var i=0; i<session.criteria.length; i++){
-    if(session.criteria[i].group === "prep"){ prepCriteria.push(session.criteria[i]); }
-  }
-  if(prepCriteria.length === 0){
-    zone.innerHTML = "<p class=\"aide\">Aucun critere de travail preparatoire defini dans le bareme de cette evaluation.</p>";
-    document.getElementById("groupeTotalBox").classList.add("hidden");
-    return;
-  }
-  var html = "";
-  for(var j=0; j<prepCriteria.length; j++){
-    var c = prepCriteria[j];
-    var valeur = "";
-    if(existingGroup && existingGroup.prepScores){
-      for(var k=0; k<existingGroup.prepScores.length; k++){
-        if(existingGroup.prepScores[k].name === c.name){ valeur = existingGroup.prepScores[k].score; break; }
-      }
-    }
-    html += "<div class=\"score-ligne\">";
-    html += "<div class=\"nom\">" + escapeHtml(c.name) + "<small>sur " + c.max + " point(s)</small></div>";
-    html += "<input type=\"text\" class=\"groupeScoreInput\" data-nom=\"" + escapeHtml(c.name) + "\" data-max=\"" + c.max + "\" placeholder=\"0-" + c.max + " ou ABS\" value=\"" + escapeHtml(valeur) + "\">";
-    html += "</div>";
-  }
-  zone.innerHTML = html;
-  document.getElementById("groupeTotalBox").classList.remove("hidden");
-  var inputs = zone.querySelectorAll(".groupeScoreInput");
-  for(var n=0; n<inputs.length; n++){
-    inputs[n].addEventListener("input", updateGroupeTotal);
-  }
-  updateGroupeTotal();
-}
-
-function updateGroupeTotal(){
-  var inputs = document.querySelectorAll(".groupeScoreInput");
-  var total = 0, maxc = 0, hasNum = false, absCount = 0;
-  for(var i=0; i<inputs.length; i++){
-    var max = parseFloat(inputs[i].getAttribute("data-max")) || 0;
-    var v = normalizeScoreValue(inputs[i].value);
-    if(v === "ABS"){ absCount++; }
-    else{ hasNum = true; if(v !== ""){ total += v; } maxc += max; }
-  }
-  var box = document.getElementById("groupeTotalBox");
-  if(!hasNum && absCount > 0){
-    box.innerHTML = "ABS<span>Sous-total travail pr\u00e9paratoire</span>";
-  }else{
-    box.innerHTML = round1(total) + " / " + round1(maxc) + "<span>Sous-total travail pr\u00e9paratoire</span>";
-  }
-}
-
-function collectGroupeScores(){
-  var inputs = document.querySelectorAll(".groupeScoreInput");
-  var scores = [];
-  var total = 0, maxc = 0, hasNum = false;
-  for(var i=0; i<inputs.length; i++){
-    var nom = inputs[i].getAttribute("data-nom");
-    var max = parseFloat(inputs[i].getAttribute("data-max")) || 0;
-    var v = normalizeScoreValue(inputs[i].value);
-    var scoreVal;
-    if(v === "ABS"){ scoreVal = "ABS"; }
-    else{ scoreVal = (v === "") ? 0 : v; hasNum = true; total += scoreVal; maxc += max; }
-    scores.push({ name: nom, max: max, score: scoreVal });
-  }
-  var totalOut = hasNum ? round1(total) : (scores.length > 0 ? "ABS" : null);
-  var maxOut = hasNum ? round1(maxc) : 0;
-  return { scores: scores, total: totalOut, maxTotal: maxOut };
-}
-
 function sauvegarderGroupe(){
   if(groupeDraftMembers.length === 0){ alert("Selectionnez au moins un eleve pour ce groupe."); return; }
   var session = findSession(state.currentSessionId);
-  var data = collectGroupeScores();
-  var appreciation = document.getElementById("groupeAppreciationInput").value;
-  var groupObj = null;
-  if(editingGroupId){
-    for(var i=0; i<session.groups.length; i++){
-      if(session.groups[i].id === editingGroupId){ groupObj = session.groups[i]; break; }
-    }
-  }
+  var groupObj = editingGroupId ? findGroupById(session, editingGroupId) : null;
   if(!groupObj){
-    groupObj = { id: genId() };
+    groupObj = { id: genId(), members:[], prepScores:[], prepTotal:null, prepMaxTotal:0, appreciation:"" };
     session.groups.push(groupObj);
   }
   groupObj.members = groupeDraftMembers.slice();
-  groupObj.prepScores = data.scores;
-  groupObj.prepTotal = data.total;
-  groupObj.prepMaxTotal = data.maxTotal;
-  groupObj.appreciation = appreciation;
 
   for(var j=0; j<session.groups.length; j++){
     if(session.groups[j].id !== groupObj.id){
@@ -1355,8 +1305,7 @@ function sauvegarderGroupe(){
   saveDB();
   annulerEditeurGroupe();
   renderGroupesList();
-  if(!document.getElementById("panelEleves").classList.contains("hidden")){ renderElevesPanel(); }
-  onStudentChange();
+  if(state.currentGroupId === groupObj.id){ renderStudentSelectorForSession(); }
 }
 
 function supprimerGroupe(groupId){
@@ -1366,13 +1315,130 @@ function supprimerGroupe(groupId){
   for(var i=0; i<session.groups.length; i++){
     if(session.groups[i].id === groupId){ session.groups.splice(i,1); break; }
   }
+  if(state.currentGroupId === groupId){ quitterGroupeActif(); }
   saveDB();
   renderGroupesList();
-  onStudentChange();
+}
+
+/* ---------- GROUPE ACTIF (EVALUATION) ---------- */
+function activerGroupePourEvaluation(groupId){
+  var session = findSession(state.currentSessionId);
+  var g = findGroupById(session, groupId);
+  if(!g){ return; }
+  state.currentGroupId = groupId;
+  document.getElementById("editeurGroupe").classList.add("hidden");
+  document.getElementById("carteGroupeActif").classList.remove("hidden");
+  document.getElementById("groupeActifTitre").textContent = "Groupe : " + g.members.join(", ");
+  renderGroupeActifPrepZone(g);
+  document.getElementById("carteAppreciationGroupe").classList.remove("hidden");
+  document.getElementById("groupeAppreciationFinaleInput").value = g.appreciation || "";
+  document.getElementById("messageChoisirGroupe").classList.add("hidden");
+  renderGroupesList();
+  renderStudentSelectorForSession();
+  window.scrollTo(0,0);
+}
+
+function quitterGroupeActif(){
+  state.currentGroupId = null;
+  document.getElementById("carteGroupeActif").classList.add("hidden");
+  document.getElementById("carteAppreciationGroupe").classList.add("hidden");
+  renderGroupesList();
+  renderStudentSelectorForSession();
+}
+
+function renderGroupeActifPrepZone(existingGroup){
+  var session = findSession(state.currentSessionId);
+  var zone = document.getElementById("groupeActifPrepZone");
+  var prepCriteria = [];
+  for(var i=0; i<session.criteria.length; i++){
+    if(session.criteria[i].group === "prep"){ prepCriteria.push(session.criteria[i]); }
+  }
+  if(prepCriteria.length === 0){
+    zone.innerHTML = "<p class=\"aide\">Aucun critere de travail preparatoire defini dans le bareme de cette evaluation.</p>";
+    document.getElementById("groupeActifTotalBox").classList.add("hidden");
+    document.getElementById("btnSauverPrepGroupeActif").classList.add("hidden");
+    return;
+  }
+  document.getElementById("btnSauverPrepGroupeActif").classList.remove("hidden");
+  var html = "";
+  for(var j=0; j<prepCriteria.length; j++){
+    var c = prepCriteria[j];
+    var valeur = "";
+    if(existingGroup && existingGroup.prepScores){
+      for(var k=0; k<existingGroup.prepScores.length; k++){
+        if(existingGroup.prepScores[k].name === c.name){ valeur = existingGroup.prepScores[k].score; break; }
+      }
+    }
+    html += "<div class=\"score-ligne\">";
+    html += "<div class=\"nom\">" + escapeHtml(c.name) + "<small>sur " + c.max + " point(s)</small></div>";
+    html += "<input type=\"text\" class=\"groupeActifScoreInput\" data-nom=\"" + escapeHtml(c.name) + "\" data-max=\"" + c.max + "\" placeholder=\"0-" + c.max + " ou ABS\" value=\"" + escapeHtml(valeur) + "\">";
+    html += "</div>";
+  }
+  zone.innerHTML = html;
+  document.getElementById("groupeActifTotalBox").classList.remove("hidden");
+  var inputs = zone.querySelectorAll(".groupeActifScoreInput");
+  for(var n=0; n<inputs.length; n++){
+    inputs[n].addEventListener("input", updateGroupeActifTotal);
+  }
+  updateGroupeActifTotal();
+}
+
+function updateGroupeActifTotal(){
+  var inputs = document.querySelectorAll(".groupeActifScoreInput");
+  var total = 0, maxc = 0, hasNum = false, absCount = 0;
+  for(var i=0; i<inputs.length; i++){
+    var max = parseFloat(inputs[i].getAttribute("data-max")) || 0;
+    var v = normalizeScoreValue(inputs[i].value);
+    if(v === "ABS"){ absCount++; }
+    else{ hasNum = true; if(v !== ""){ total += v; } maxc += max; }
+  }
+  var box = document.getElementById("groupeActifTotalBox");
+  if(!hasNum && absCount > 0){
+    box.innerHTML = "ABS<span>Sous-total travail pr\u00e9paratoire</span>";
+  }else{
+    box.innerHTML = round1(total) + " / " + round1(maxc) + "<span>Sous-total travail pr\u00e9paratoire</span>";
+  }
+}
+
+function sauvegarderPrepGroupeActif(){
+  var session = findSession(state.currentSessionId);
+  var g = findGroupById(session, state.currentGroupId);
+  if(!g){ return; }
+  var inputs = document.querySelectorAll(".groupeActifScoreInput");
+  var scores = [];
+  var total = 0, maxc = 0, hasNum = false;
+  for(var i=0; i<inputs.length; i++){
+    var nom = inputs[i].getAttribute("data-nom");
+    var max = parseFloat(inputs[i].getAttribute("data-max")) || 0;
+    var v = normalizeScoreValue(inputs[i].value);
+    var scoreVal;
+    if(v === "ABS"){ scoreVal = "ABS"; }
+    else{ scoreVal = (v === "") ? 0 : v; hasNum = true; total += scoreVal; maxc += max; }
+    scores.push({ name: nom, max: max, score: scoreVal });
+  }
+  g.prepScores = scores;
+  g.prepTotal = hasNum ? round1(total) : (scores.length > 0 ? "ABS" : null);
+  g.prepMaxTotal = hasNum ? round1(maxc) : 0;
+  saveDB();
+  alert("Travail preparatoire du groupe enregistre.");
+}
+
+function sauvegarderAppreciationGroupe(){
+  var session = findSession(state.currentSessionId);
+  var g = findGroupById(session, state.currentGroupId);
+  if(!g){ return; }
+  g.appreciation = document.getElementById("groupeAppreciationFinaleInput").value;
+  saveDB();
+  alert("Appreciation du groupe enregistree.");
 }
 
 function openSessionAndSelectStudent(sessionId, studentName){
   openSession(sessionId);
+  var session = findSession(sessionId);
+  if(session && session.mode === "groupe"){
+    var g = findGroupForStudent(session, studentName);
+    if(g){ activerGroupePourEvaluation(g.id); }
+  }
   var sel = document.getElementById("eleveSelect");
   sel.value = studentName;
   onStudentChange();
@@ -1473,17 +1539,30 @@ function validateBareme(){
 function renderStudentSelectorForSession(){
   var sel = document.getElementById("eleveSelect");
   var cls = state.db.classes[state.currentClass];
+  var session = findSession(state.currentSessionId);
+  var liste = cls.students;
+  var isGroupMode = !!(session && session.mode === "groupe");
+  if(isGroupMode){
+    if(state.currentGroupId){
+      var g = findGroupById(session, state.currentGroupId);
+      liste = g ? g.members : [];
+    }else{
+      liste = [];
+    }
+  }
   var html = "";
-  for(var i=0; i<cls.students.length; i++){
-    html += "<option value=\"" + escapeHtml(cls.students[i]) + "\">" + escapeHtml(cls.students[i]) + "</option>";
+  for(var i=0; i<liste.length; i++){
+    html += "<option value=\"" + escapeHtml(liste[i]) + "\">" + escapeHtml(liste[i]) + "</option>";
   }
   sel.innerHTML = html;
-  if(cls.students.length > 0){
-    state.currentStudent = cls.students[0];
+  if(liste.length > 0){
+    state.currentStudent = liste[0];
     sel.value = state.currentStudent;
   }else{
     state.currentStudent = null;
   }
+  document.getElementById("carteEvalEleve").classList.toggle("hidden", isGroupMode && !state.currentGroupId);
+  document.getElementById("messageChoisirGroupe").classList.toggle("hidden", !(isGroupMode && !state.currentGroupId));
   onStudentChange();
 }
 
@@ -1496,26 +1575,8 @@ function onStudentChange(){
   renderScoreInputs(rec);
   document.getElementById("pointAnglaisInput").value = rec ? (rec.pointAnglais || "") : "";
 
-  var appreciationField = document.getElementById("appreciationInput");
-  var groupeInfoLigne = document.getElementById("groupeInfoLigne");
-  var groupInfo = (session && session.mode === "groupe" && state.currentStudent) ? findGroupForStudent(session, state.currentStudent) : null;
-  appreciationField.removeAttribute("readonly");
-  appreciationField.classList.remove("champ-verrouille");
-  if(rec && rec.appreciation){
-    appreciationField.value = rec.appreciation;
-  }else if(groupInfo){
-    appreciationField.value = groupInfo.appreciation || "";
-  }else{
-    appreciationField.value = "";
-  }
-  if(groupInfo){
-    groupeInfoLigne.textContent = "Groupe : " + groupInfo.members.join(", ") + " — appreciation preremplie a partir du groupe, modifiable individuellement.";
-    groupeInfoLigne.classList.remove("hidden");
-  }else if(session && session.mode === "groupe"){
-    groupeInfoLigne.textContent = "Cet eleve n'est rattache a aucun groupe pour l'instant.";
-    groupeInfoLigne.classList.remove("hidden");
-  }else{
-    groupeInfoLigne.classList.add("hidden");
+  if(!(session && session.mode === "groupe")){
+    document.getElementById("appreciationInput").value = rec ? (rec.appreciation || "") : "";
   }
 
   document.getElementById("conseilsInput").value = rec ? (rec.conseils || "") : "";
@@ -1714,6 +1775,7 @@ function saveEvaluation(advanceToNext){
   if(!state.currentStudent){ alert("Selectionnez un eleve."); return; }
   var session = findSession(state.currentSessionId);
   if(!session){ return; }
+  var isGroupMode = (session.mode === "groupe");
   var data = collectCurrentScores();
   var dateVal = document.getElementById("evalStudentDate").value;
   if(dateVal === ""){ dateVal = todayISO(); }
@@ -1728,7 +1790,7 @@ function saveEvaluation(advanceToNext){
     oralMaxTotal: data.oralMaxTotal,
     absenceStatus: state.currentAbsenceStatus,
     pointAnglais: document.getElementById("pointAnglaisInput").value,
-    appreciation: document.getElementById("appreciationInput").value,
+    appreciation: isGroupMode ? "" : document.getElementById("appreciationInput").value,
     conseils: document.getElementById("conseilsInput").value,
     recommandations: document.getElementById("recommandationsInput").value,
     savedAt: new Date().toISOString()
@@ -1771,9 +1833,14 @@ function renderElevesPanel(){
   var cls = state.db.classes[state.currentClass];
   var session = findSession(state.currentSessionId);
   if(!cls || !session){ zone.innerHTML = ""; return; }
+  var liste = cls.students;
+  if(session.mode === "groupe"){
+    var g = state.currentGroupId ? findGroupById(session, state.currentGroupId) : null;
+    liste = g ? g.members : [];
+  }
   var html = "";
-  for(var i=0; i<cls.students.length; i++){
-    var nom = cls.students[i];
+  for(var i=0; i<liste.length; i++){
+    var nom = liste[i];
     var rec = session.records[nom];
     var statut, classeStatut;
     if(!rec){ statut = TXT.aEvaluer; classeStatut = "statut-attente"; }
@@ -2003,7 +2070,7 @@ function buildStudentPageHTML(studentName, sessionId){
   }
 
   html += "<div class=\"bloc\"><b>" + TXT.pointAnglais + "</b>" + nl2br(rec.pointAnglais) + "</div>";
-  html += "<div class=\"bloc\"><b>" + TXT.Appreciation + " " + TXT.generale + "</b>" + nl2br(rec.appreciation) + "</div>";
+  html += "<div class=\"bloc\"><b>" + TXT.Appreciation + " " + TXT.generale + "</b>" + nl2br(groupInfo ? groupInfo.appreciation : rec.appreciation) + "</div>";
   html += "<div class=\"bloc\"><b>Conseils</b>" + nl2br(rec.conseils) + "</div>";
   html += "<div class=\"bloc\"><b>Recommandations de travail</b>" + nl2br(rec.recommandations) + "</div>";
 
@@ -2065,6 +2132,9 @@ document.addEventListener("DOMContentLoaded", function(){
   document.getElementById("btnNouveauGroupe").addEventListener("click", ouvrirNouveauGroupe);
   document.getElementById("btnSauverGroupe").addEventListener("click", sauvegarderGroupe);
   document.getElementById("btnAnnulerGroupe").addEventListener("click", annulerEditeurGroupe);
+  document.getElementById("btnQuitterGroupeActif").addEventListener("click", quitterGroupeActif);
+  document.getElementById("btnSauverPrepGroupeActif").addEventListener("click", sauvegarderPrepGroupeActif);
+  document.getElementById("btnSauverAppreciationGroupe").addEventListener("click", sauvegarderAppreciationGroupe);
 
   document.getElementById("eleveSelect").addEventListener("change", onStudentChange);
   document.getElementById("btnElevesPanel").addEventListener("click", toggleElevesPanel);
